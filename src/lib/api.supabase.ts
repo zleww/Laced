@@ -105,8 +105,19 @@ export function createSupabaseApi(supabase: SupabaseClient): Api {
     const { data, error } = await supabase.functions.invoke('staff-admin', { body })
     if (!error) return
     // The function answers with { error: "plain message" }; show that when there is one.
-    const context = (error as { context?: Response }).context
-    const message = context ? await context.json().then((json: Row) => json?.error, () => null) : null
+    // When the server answered, `context` is its Response. When the request never
+    // got through (function not deployed, no connection), it is something else.
+    const context = (error as { context?: unknown }).context
+    let message: string | null = null
+    if (context instanceof Response) {
+      if (context.status === 404) {
+        throw new Error('The staff-admin function is not deployed in Supabase yet. Deploy it, then try again.')
+      }
+      message = await context.json().then(
+        (json: Row) => (typeof json?.error === 'string' ? json.error : null),
+        () => null,
+      )
+    }
     if (message) throw new Error(message)
     if (/failed to send|fetch/i.test(error.message)) {
       throw new Error("Can't reach the staff-admin function. Check that it is deployed in Supabase.")

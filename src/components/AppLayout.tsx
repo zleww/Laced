@@ -58,6 +58,8 @@ export function AppLayout() {
   if (session === undefined) return <Loading />
   // Signed out: the front page is public, every other screen goes to sign-in.
   if (session === null) return pathname === '/' ? <LandingPage /> : <Navigate to="/login" replace />
+  // Password accepted, authenticator code still missing: finish signing in first.
+  if (session.needsCode) return <Navigate to="/login" replace />
 
   const isOwner = session.role === 'owner'
   const groups: Array<[string, Tab[]]> = isOwner

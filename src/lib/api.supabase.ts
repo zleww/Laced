@@ -98,6 +98,18 @@ export function createSupabaseApi(supabase: SupabaseClient): Api {
     return { userId, fullName: data.full_name, role: data.role }
   }
 
+  // After the password, an account with an authenticator app still needs the code.
+  async function needsCode(): Promise<boolean> {
+    const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel()
+    return data?.nextLevel === 'aal2' && data.currentLevel !== 'aal2'
+  }
+
+  async function withCodeCheck(session: Session | null): Promise<Session | null> {
+    return session ? { ...session, needsCode: await needsCode() } : null
+  }
+
+  const wrongCode = "That code didn't work. Codes change every 30 seconds: check the time on your phone and try the newest one."
+
   async function call(fn: string, args: Row): Promise<Row> {
     const { data, error } = await supabase.rpc(fn, args)
     if (error) fail(error)
@@ -138,7 +150,7 @@ export function createSupabaseApi(supabase: SupabaseClient): Api {
       if (!userId) return null
       const session = await loadSession(userId)
       if (!session) await supabase.auth.signOut()
-      return session
+      return withCodeCheck(session)
     },
 
     async signIn(email, password) {
@@ -154,7 +166,58 @@ export function createSupabaseApi(supabase: SupabaseClient): Api {
         await supabase.auth.signOut()
         throw new Error("This account doesn't have access. Ask the owner to activate it.")
       }
-      return session
+      return (await withCodeCheck(session))!
+    },
+
+    async verifySignInCode(code) {
+      const { data: factors, error } = await supabase.auth.mfa.listFactors()
+      if (error) fail(error)
+      const factor = factors?.totp.find((item) => item.status === 'verified')
+      if (!factor) throw new Error('No authenticator app is set up for this account.')
+      const result = await supabase.auth.mfa.challengeAndVerify({ factorId: factor.id, code: code.trim() })
+      if (result.error) throw new Error(wrongCode)
+      const { data } = await supabase.auth.getUser()
+      const session = data.user ? await loadSession(data.user.id) : null
+      if (!session) throw new Error('Sign in again.')
+      return { ...session, needsCode: false }
+    },
+
+    async twoStepStatus() {
+      const { data, error } = await supabase.auth.mfa.listFactors()
+      if (error) fail(error)
+      return { on: Boolean(data?.totp.some((item) => item.status === 'verified')) }
+    },
+
+    async startTwoStep() {
+      // Clear out any half-finished setup first, so a new QR code can be made.
+      const { data: factors } = await supabase.auth.mfa.listFactors()
+      for (const factor of factors?.all ?? []) {
+        if (factor.status !== 'verified') await supabase.auth.mfa.unenroll({ factorId: factor.id })
+      }
+      const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'Laced' })
+      if (error || !data) throw new Error("Couldn't start the setup. Try again.")
+      const svg = data.totp.qr_code
+      return {
+        factorId: data.id,
+        qrCode: svg.startsWith('data:') ? svg : `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`,
+        secret: data.totp.secret,
+      }
+    },
+
+    async confirmTwoStep(factorId, code) {
+      const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId, code: code.trim() })
+      if (error) throw new Error(wrongCode)
+    },
+
+    async turnOffTwoStep() {
+      const { data: factors, error } = await supabase.auth.mfa.listFactors()
+      if (error) fail(error)
+      for (const factor of factors?.all ?? []) {
+        const result = await supabase.auth.mfa.unenroll({ factorId: factor.id })
+        if (result.error) throw new Error("Couldn't turn it off. Sign out, sign in again with your code, and try again.")
+      }
+      // Get a fresh token that no longer carries the old sign-in level.
+      await supabase.auth.refreshSession()
     },
 
     async signInDemo() {

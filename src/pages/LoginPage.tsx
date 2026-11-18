@@ -15,7 +15,8 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null)
   const demo = api.mode === 'demo'
 
-  if (session) return <Navigate to="/" replace />
+  if (session && !session.needsCode) return <Navigate to="/" replace />
+  if (session?.needsCode) return <CodeStep name={session.fullName} />
 
   async function run(which: 'form' | Role, action: () => Promise<void>) {
     setBusy(which)
@@ -93,6 +94,58 @@ export function LoginPage() {
       ) : (
         <p className="mt-6 text-[13px] text-ink-2">Accounts are created by the owner. Ask them if you need access.</p>
       )}
+    </main>
+  )
+}
+
+/** The second step for accounts with an authenticator app: the 6-digit code. */
+function CodeStep({ name }: { name: string }) {
+  const { verifyCode, signOut } = useAuth()
+  const [code, setCode] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function submit(event: FormEvent) {
+    event.preventDefault()
+    setBusy(true)
+    setError(null)
+    try {
+      await verifyCode(code)
+    } catch (reason) {
+      setError(errorMessage(reason))
+      setCode('')
+      setBusy(false)
+    }
+  }
+
+  return (
+    <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-5 py-10">
+      <p className="text-[20px] font-semibold tracking-tight">Laced</p>
+      <h1 className="mt-5 text-[30px] font-semibold tracking-tight">Enter your code</h1>
+      <p className="mt-2 text-[15px] text-ink-2">
+        Hi {name}. Open your authenticator app and type the 6-digit code for Laced.
+      </p>
+      <form onSubmit={submit} className="mt-6 grid gap-4">
+        <Field
+          label="Code"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          pattern="[0-9]{6}"
+          maxLength={6}
+          placeholder="123456"
+          required
+          autoFocus
+          value={code}
+          onChange={(event) => setCode(event.target.value.replace(/\D/g, ''))}
+        />
+        {error && <Notice tone="bad">{error}</Notice>}
+        <Button type="submit" busy={busy} disabled={code.length !== 6}>
+          Continue
+        </Button>
+      </form>
+      <button type="button" onClick={signOut} className="mt-4 min-h-11 w-fit text-[14px] text-ink-2 hover:text-ink">
+        Use a different account
+      </button>
     </main>
   )
 }

@@ -81,21 +81,14 @@ Deno.serve(async (request) => {
     const { data: caller, error: callerError } = await admin.auth.getUser(token)
     if (callerError || !caller.user) throw new Refusal('Sign in again.', 401)
 
-    const { data: callerRow } = await admin
-      .from('staff')
-      .select('role, active')
-      .eq('id', caller.user.id)
-      .maybeSingle()
-    if (!callerRow || !callerRow.active || callerRow.role !== 'owner') {
-      throw new Refusal('Only the owner can manage staff accounts.', 403)
-    }
-
-    // Turning an account on or off is done as the owner, so it passes the same
-    // row rules as the app and the audit log records the owner as the actor.
+    // Acting as the caller, so the database's own rules decide. This also covers
+    // two-step sign-in: an owner who has not entered their code is not the owner yet.
     const asOwner = createClient(Deno.env.get('SUPABASE_URL')!, publishableKey(), {
       auth: { persistSession: false, autoRefreshToken: false },
       global: { headers: { Authorization: `Bearer ${token}` } },
     })
+    const { data: isOwner } = await asOwner.rpc('is_owner')
+    if (isOwner !== true) throw new Refusal('Only the owner can manage staff accounts.', 403)
 
     const body = await request.json().catch(() => ({}))
 

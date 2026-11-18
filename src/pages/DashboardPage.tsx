@@ -27,6 +27,11 @@ export function DashboardPage() {
   const [closing, setClosing] = useState(false)
   const [closedNotice, setClosedNotice] = useState(false)
   const dayClosed = useLoad(() => api.isDayClosed(), [])
+  // The owner account holds the money and payroll, so it gets a reminder until two-step sign-in is on.
+  const twoStep = useLoad(
+    () => (isOwner && api.mode === 'live' ? api.twoStepStatus() : Promise.resolve({ on: true })),
+    [isOwner],
+  )
 
   const summary = useLoad(() => api.todaySummary(), [])
   // Staff are not shown the gym's totals, so the request is not even made for them.
@@ -72,6 +77,15 @@ export function DashboardPage() {
           </Button>
         </div>
       </div>
+
+      {twoStep.data?.on === false && (
+        <p className="flex flex-wrap items-center justify-between gap-3 rounded-control border border-warn/40 bg-warn-bg px-3.5 py-3 text-[14px] text-warn">
+          <span>Protect the owner account: turn on two-step sign-in.</span>
+          <Link to="/settings" className="font-semibold underline underline-offset-4">
+            Set it up
+          </Link>
+        </p>
+      )}
 
       {closedNotice && (
         <Notice tone="good">

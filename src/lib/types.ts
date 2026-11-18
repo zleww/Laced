@@ -6,6 +6,17 @@ export type Session = {
   userId: string
   fullName: string
   role: Role
+  /** Signed in with the password, but the authenticator code is still needed. */
+  needsCode?: boolean
+}
+
+/** A new authenticator app being set up: show the QR code, then confirm with a code. */
+export type TwoStepSetup = {
+  factorId: string
+  /** An image source for the QR code. */
+  qrCode: string
+  /** The same key as text, for typing into the app by hand. */
+  secret: string
 }
 
 export type MemberStatus = 'active' | 'expiring' | 'expired' | 'none'
@@ -266,6 +277,13 @@ export interface Api {
   signIn(email: string, password: string): Promise<Session>
   signInDemo(role: Role): Promise<Session>
   signOut(): Promise<void>
+  /** Second step of sign-in: the 6-digit code from the authenticator app. */
+  verifySignInCode(code: string): Promise<Session>
+  /** Whether this account has an authenticator app turned on. */
+  twoStepStatus(): Promise<{ on: boolean }>
+  startTwoStep(): Promise<TwoStepSetup>
+  confirmTwoStep(factorId: string, code: string): Promise<void>
+  turnOffTwoStep(): Promise<void>
   searchMembers(query: string): Promise<Member[]>
   getMember(id: string): Promise<MemberDetail>
   registerMember(input: RegisterMemberInput): Promise<string>

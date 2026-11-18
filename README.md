@@ -57,6 +57,7 @@ The schema is plain SQL in `supabase/migrations/`, applied in file-name order:
 6. `money`: voiding payments and expenses, closing the day, and the owner's money totals
 7. `payroll_activity_reports`: employees, payroll with government deductions, the activity log, and monthly reports
 8. `member_deletion`: the owner deletes a member's name and phone on request, keeping the payment records
+9. `two_step_sign_in`: once an account turns on an authenticator app, it has no powers until the code is entered
 
 The browser never sends a price and never writes to the money tables directly. It calls a database function with ids, and the function looks up the price and writes the payment and membership in one transaction.
 
@@ -73,6 +74,7 @@ The tests run the real migration files against [PGlite](https://pglite.dev), a P
 - **Dates:** inclusive end dates, early renewal, and the Manila day boundary (11:30 PM counts as that day)
 - **Check-in:** expired members are refused, and a double tap counts once
 - **Money:** only the owner can void, a void cancels its membership, staff get no totals, and the day close hides the expected amounts from the person counting
+- **Two-step sign-in:** with an authenticator app turned on, a password alone gives no staff or owner access; unconfirmed apps are ignored
 - **Deletion:** only the owner can delete a member's data, the name and phone are gone, payments stay, and the member can no longer be checked in
 - **Payroll:** SSS, PhilHealth, Pag-IBIG, and tax at the floors, ceilings, and brackets; a paid month is locked; staff see no employees or pay; the on-screen preview matches the database for 22 salary levels
 

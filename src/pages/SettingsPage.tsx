@@ -3,6 +3,7 @@ import { Navigate } from 'react-router'
 import { CheckIcon } from '../components/icons'
 import { PageHeader, Panel } from '../components/panels'
 import { StaffAccountsPanel } from '../components/StaffAccountsPanel'
+import { TwoStepPanel } from '../components/TwoStepPanel'
 import { Button, Notice } from '../components/ui'
 import { api } from '../lib/api'
 import { useSession } from '../lib/auth'
@@ -11,7 +12,7 @@ import { errorMessage } from '../lib/format'
 import { useTheme } from '../lib/theme'
 
 const checklist = [
-  'Turn on two-step sign-in for the owner account in Supabase.',
+  'Turn on two-step sign-in for the owner account (the panel above).',
   'Give every desk staff member their own login. Never share the owner account.',
   'When someone stops working here, turn off their account the same day.',
   'Download a backup every week and keep it off the desk phone.',
@@ -91,6 +92,8 @@ export function SettingsPage() {
           </button>
         </Panel>
       </div>
+
+      <TwoStepPanel />
 
       <StaffAccountsPanel />
 

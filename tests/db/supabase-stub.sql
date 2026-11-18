@@ -29,3 +29,21 @@ grant usage on schema public to anon, authenticated;
 alter default privileges in schema public grant all on tables to anon, authenticated;
 alter default privileges in schema public grant all on sequences to anon, authenticated;
 alter default privileges in schema public grant execute on functions to anon, authenticated;
+
+-- Two-step sign-in. Supabase keeps enrolled authenticator apps here, and puts
+-- the assurance level ("aal1" after a password, "aal2" after the code) in the token.
+create table auth.mfa_factors (
+  id      uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users (id),
+  status  text not null default 'unverified'
+);
+
+create function auth.jwt()
+returns jsonb
+language sql
+stable
+as $$
+  select coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb
+$$;
+
+grant execute on function auth.jwt() to anon, authenticated;

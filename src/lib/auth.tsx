@@ -9,6 +9,8 @@ type AuthValue = {
   signIn: (email: string, password: string) => Promise<void>
   signInDemo: (role: Role) => Promise<void>
   signOut: () => Promise<void>
+  /** The second sign-in step, for accounts with an authenticator app. */
+  verifyCode: (code: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthValue | null>(null)
@@ -29,6 +31,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       signIn: async (email, password) => setSession(await api.signIn(email, password)),
       signInDemo: async (role) => setSession(await api.signInDemo(role)),
+      verifyCode: async (code) => setSession(await api.verifySignInCode(code)),
       signOut: async () => {
         await api.signOut()
         setSession(null)

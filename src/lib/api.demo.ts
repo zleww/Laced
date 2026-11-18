@@ -242,6 +242,27 @@ export const demoApi: Api = {
     sessionStorage.removeItem(SESSION_KEY)
   },
 
+  async verifySignInCode() {
+    throw new Error('Two-step sign-in works only with the live database.')
+  },
+
+  async twoStepStatus() {
+    requireSession()
+    return { on: false }
+  },
+
+  async startTwoStep() {
+    throw new Error('Two-step sign-in works only with the live database.')
+  },
+
+  async confirmTwoStep() {
+    throw new Error('Two-step sign-in works only with the live database.')
+  },
+
+  async turnOffTwoStep() {
+    throw new Error('Two-step sign-in works only with the live database.')
+  },
+
   async searchMembers(query) {
     requireSession()
     await pause()

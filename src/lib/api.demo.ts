@@ -285,6 +285,16 @@ export const demoApi: Api = {
     return id
   },
 
+  async deleteMemberData(memberId, reason) {
+    requireOwner()
+    await pause()
+    if (reason.trim().length < 3) throw new Error('Give a reason, such as "Member asked"')
+    const index = members.findIndex((item) => item.id === memberId)
+    if (index < 0) throw new Error('Member not found or already deleted')
+    const [removed] = members.splice(index, 1)
+    log('member', `Deleted the data of member no. ${removed.memberNo}: ${reason.trim()}`)
+  },
+
   async listPlans() {
     requireSession()
     return plans

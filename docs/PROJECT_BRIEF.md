@@ -203,7 +203,8 @@ The schema lives in `supabase/migrations/` and is the source of truth. Where it 
 - **`analytics_monthly(months)`** (owner only): revenue, expenses, paid payroll (gross plus the gym's share of contributions), check-ins, and new members per Manila month.
 - **Screens:** Reports (monthly table and chart, CSV downloads), Payroll (register, employees, print), Activity, and Settings (full backup download, system info, safety habits). On a phone the owner's extra screens sit under **More**.
 - **Idle sign-out:** after 15 minutes with no taps or typing, the app signs out (shared desk phone).
-- **Not built yet:** discounts, card assignment (QR and NFC), member deletion, and the remaining analytics (renewal rate, busiest-hours heatmap, per-staff collections).
+- **`delete_member_data(member, reason)`** (owner only): replaces the name with "Deleted member", erases the phone, unlinks any login, turns off cards, and keeps payments, memberships, and visits. The activity log records the deletion and reason without the name.
+- **Not built yet:** discounts, card assignment (QR and NFC), deleting a day-pass guest's name, and the remaining analytics (renewal rate, busiest-hours heatmap, per-staff collections).
 
 **Tests.** `npm test` runs the real migration files against an in-memory Postgres and checks access rules, price integrity, date rules, and the Manila day boundary.
 

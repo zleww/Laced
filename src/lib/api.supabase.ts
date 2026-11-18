@@ -218,6 +218,10 @@ export function createSupabaseApi(supabase: SupabaseClient): Api {
       return result.member_id
     },
 
+    async deleteMemberData(memberId, reason) {
+      await call('delete_member_data', { p_member_id: memberId, p_reason: reason })
+    },
+
     async listPlans() {
       const { data, error } = await supabase.from('plans').select('*').eq('active', true).order('sort')
       if (error) fail(error)

@@ -269,6 +269,8 @@ export interface Api {
   searchMembers(query: string): Promise<Member[]>
   getMember(id: string): Promise<MemberDetail>
   registerMember(input: RegisterMemberInput): Promise<string>
+  /** Owner only: wipes the name and phone, keeps the money records. */
+  deleteMemberData(memberId: string, reason: string): Promise<void>
   listPlans(): Promise<Plan[]>
   sellMembership(input: SellMembershipInput): Promise<SaleResult>
   sellDayPass(input: SellDayPassInput): Promise<SaleResult>

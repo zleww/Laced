@@ -10,21 +10,28 @@ type ReasonSheetProps = {
   /** What is about to be voided, in plain words. */
   subject: string
   confirmLabel: string
+  /** Shown under the reason field. */
+  hint?: string
   onClose: () => void
   /** Does the work. If it throws, the message is shown and the sheet stays open. */
   onConfirm: (reason: string) => Promise<void>
 }
 
 // Voiding always asks for a written reason. Nothing is ever deleted.
-export function ReasonSheet({ open, title, subject, confirmLabel, onClose, onConfirm }: ReasonSheetProps) {
+export function ReasonSheet({ open, title, subject, confirmLabel, hint, onClose, onConfirm }: ReasonSheetProps) {
   return (
     <Sheet open={open} title={title} onClose={onClose}>
-      <ReasonForm subject={subject} confirmLabel={confirmLabel} onConfirm={onConfirm} />
+      <ReasonForm subject={subject} confirmLabel={confirmLabel} hint={hint} onConfirm={onConfirm} />
     </Sheet>
   )
 }
 
-function ReasonForm({ subject, confirmLabel, onConfirm }: Pick<ReasonSheetProps, 'subject' | 'confirmLabel' | 'onConfirm'>) {
+function ReasonForm({
+  subject,
+  confirmLabel,
+  hint = "The record is kept and marked as voided. This can't be undone.",
+  onConfirm,
+}: Pick<ReasonSheetProps, 'subject' | 'confirmLabel' | 'hint' | 'onConfirm'>) {
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -46,7 +53,7 @@ function ReasonForm({ subject, confirmLabel, onConfirm }: Pick<ReasonSheetProps,
       <p className="text-[14px] text-ink-2">{subject}</p>
       <Field
         label="Reason"
-        hint="The record is kept and marked as voided. This can't be undone."
+        hint={hint}
         placeholder="Entered twice"
         required
         minLength={3}

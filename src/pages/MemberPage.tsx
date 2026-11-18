@@ -1,4 +1,6 @@
-import { Link, useParams } from 'react-router'
+import { useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router'
+import { ReasonSheet } from '../sheets/ReasonSheet'
 import { ChevronLeftIcon } from '../components/icons'
 import { MemberActions } from '../components/MemberActions'
 import { Avatar } from '../components/MemberRow'
@@ -20,6 +22,8 @@ export function MemberPage() {
   const { id = '' } = useParams()
   const session = useSession()
   const detail = useLoad(() => api.getMember(id), [id])
+  const navigate = useNavigate()
+  const [deleting, setDeleting] = useState(false)
 
   const back = (
     <Link to="/members" className="-ml-1 inline-flex min-h-11 items-center gap-1 text-[14px] font-medium text-ink-2">
@@ -100,6 +104,38 @@ export function MemberPage() {
           )}
         </Card>
       </section>
+
+      {session.role === 'owner' && (
+        <section>
+          <SectionTitle>Member's data</SectionTitle>
+          <Card className="grid gap-3 p-4">
+            <p className="text-[14px] text-ink-2">
+              If {member.fullName} asks for their data to be deleted, this removes their name and phone number. Their
+              payments and visits stay as "Deleted member" so the gym's records still add up.
+            </p>
+            <button
+              type="button"
+              onClick={() => setDeleting(true)}
+              className="min-h-11 w-fit rounded-control border border-line px-4 text-[14px] font-medium text-bad hover:border-bad"
+            >
+              Delete member's data
+            </button>
+          </Card>
+        </section>
+      )}
+
+      <ReasonSheet
+        open={deleting}
+        title="Delete member's data"
+        subject={`${member.fullName}'s name and phone number will be erased for good. This can't be undone.`}
+        confirmLabel="Delete their data"
+        hint="For example: Member asked. The reason is kept in the activity log."
+        onClose={() => setDeleting(false)}
+        onConfirm={async (reason) => {
+          await api.deleteMemberData(member.id, reason)
+          navigate('/members', { replace: true })
+        }}
+      />
     </div>
   )
 }

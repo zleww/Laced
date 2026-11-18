@@ -51,7 +51,7 @@ export function SettingsPage() {
 
   return (
     <div className="grid grid-cols-1 gap-5">
-      <PageHeader title="Settings" />
+      <PageHeader title="Settings" fromMore />
 
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
         <Panel title="Backup">

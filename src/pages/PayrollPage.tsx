@@ -82,7 +82,7 @@ export function PayrollPage() {
   if (!data.data) {
     return (
       <div className="grid grid-cols-1 gap-5">
-        <PageHeader title="Payroll">{monthNav}</PageHeader>
+        <PageHeader title="Payroll" fromMore>{monthNav}</PageHeader>
         {data.error ? <Notice tone="bad">{data.error}</Notice> : <Loading />}
       </div>
     )
@@ -99,7 +99,7 @@ export function PayrollPage() {
 
   return (
     <div className={`grid grid-cols-1 gap-5 ${data.loading ? 'opacity-60' : ''}`}>
-      <PageHeader title="Payroll">
+      <PageHeader title="Payroll" fromMore>
         <div className="flex flex-wrap items-center gap-2">
           {monthNav}
           <button type="button" className={`${smallButton} print:hidden`} onClick={() => window.print()} disabled={entries.length === 0}>

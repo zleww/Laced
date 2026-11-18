@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Navigate, NavLink, Outlet } from 'react-router'
+import { Navigate, NavLink, Outlet, useLocation } from 'react-router'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { formatWeekday, manilaToday } from '../lib/dates'
@@ -52,6 +52,7 @@ export function AppLayout() {
   const [theme, toggleTheme] = useTheme()
   // The desk phone is shared: sign out after a while with no one using it.
   useIdleSignOut(Boolean(session), signOut)
+  const { pathname } = useLocation()
 
   if (session === undefined) return <Loading />
   if (session === null) return <Navigate to="/login" replace />
@@ -68,6 +69,11 @@ export function AppLayout() {
   const phoneTabs = isOwner
     ? [...deskTabs, businessTabs[0], { to: '/more', label: 'More', icon: MoreIcon }]
     : deskTabs
+  // On a phone, Reports, Payroll, Activity, and Settings are opened from More,
+  // so the More tab stays highlighted while one of them is open.
+  const inMore = ['/more', ...[...businessTabs.slice(1), ...workspaceTabs].map((tab) => tab.to)].some(
+    (path) => pathname === path || pathname.startsWith(path + '/'),
+  )
 
   const themeButton = (
     <button
@@ -176,7 +182,7 @@ export function AppLayout() {
                 end={tab.to === '/'}
                 className={({ isActive }) =>
                   `flex min-h-12 flex-col items-center justify-center gap-0.5 rounded-control text-[11px] ${
-                    isActive ? 'bg-raised font-medium text-ink' : 'text-ink-3'
+                    isActive || (tab.to === '/more' && inMore) ? 'bg-raised font-medium text-ink' : 'text-ink-3'
                   }`
                 }
               >

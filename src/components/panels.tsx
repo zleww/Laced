@@ -1,15 +1,35 @@
 import type { ReactNode } from 'react'
+import { Link } from 'react-router'
+import { ChevronLeftIcon } from './icons'
 
 // Building blocks for the owner's data screens (Money, Reports, Payroll, Activity, Settings).
 
 export const smallButton =
   'inline-flex min-h-9 items-center gap-1.5 rounded-full border border-line px-3 text-[12px] font-medium text-ink-2 hover:text-ink disabled:opacity-50'
 
-export function PageHeader({ title, children }: { title: string; children?: ReactNode }) {
+type PageHeaderProps = {
+  title: string
+  /** On a phone, show a back link to the More page this screen was opened from. */
+  fromMore?: boolean
+  children?: ReactNode
+}
+
+export function PageHeader({ title, fromMore = false, children }: PageHeaderProps) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3">
-      <h1 className="text-[22px] font-semibold tracking-tight">{title}</h1>
-      {children}
+    <div className="grid gap-1">
+      {fromMore && (
+        <Link
+          to="/more"
+          className="-ml-1.5 inline-flex min-h-10 w-fit items-center gap-1 rounded-control pr-2 text-[14px] text-ink-2 hover:text-ink md:hidden print:hidden"
+        >
+          <ChevronLeftIcon className="size-5" />
+          More
+        </Link>
+      )}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-[22px] font-semibold tracking-tight">{title}</h1>
+        {children}
+      </div>
     </div>
   )
 }

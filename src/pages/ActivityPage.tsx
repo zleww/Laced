@@ -68,7 +68,7 @@ export function ActivityPage() {
 
   return (
     <div className="grid grid-cols-1 gap-5">
-      <PageHeader title="Activity" />
+      <PageHeader title="Activity" fromMore />
       <Pills label="Show" options={filters} value={kind} onChange={setKind} />
       {error && <Notice tone="bad">{error}</Notice>}
 

@@ -50,7 +50,7 @@ export function ReportsPage() {
   }
 
   const header = (
-    <PageHeader title="Reports">
+    <PageHeader title="Reports" fromMore>
       <Pills label="Range" options={ranges} value={months} onChange={setMonths} />
     </PageHeader>
   )

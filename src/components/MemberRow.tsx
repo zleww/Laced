@@ -6,7 +6,7 @@ export function Avatar({ name, large = false }: { name: string; large?: boolean 
   return (
     <span
       aria-hidden="true"
-      className={`grid flex-none place-items-center rounded-full bg-bg font-medium text-ink-2 ${
+      className={`grid flex-none place-items-center rounded-full bg-raised font-medium text-ink-2 ${
         large ? 'size-12 text-[16px]' : 'size-10 text-[14px]'
       }`}
     >

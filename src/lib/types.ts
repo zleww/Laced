@@ -60,6 +60,74 @@ export type TodaySummary = {
   expiring: Member[]
 }
 
+/** One Manila day on the owner dashboard. */
+export type DayStat = {
+  day: string // YYYY-MM-DD
+  revenueCentavos: number
+  checkins: number
+}
+
+/** Totals for the owner's Money screen. */
+export type MoneySummary = {
+  revenueCentavos: number
+  cashCentavos: number
+  gcashCentavos: number
+  expensesCentavos: number
+  voidCount: number
+}
+
+export type PlanRevenue = {
+  planName: string
+  revenueCentavos: number
+  sales: number
+}
+
+export type PaymentRecord = {
+  id: string
+  paidAt: string
+  payer: string
+  planName: string
+  amountCentavos: number
+  method: PaymentMethod
+  gcashRef: string | null
+  receivedBy: string
+  voidedAt: string | null
+  voidReason: string | null
+}
+
+export type ExpenseRecord = {
+  id: string
+  category: string
+  amountCentavos: number
+  spentOn: string
+  note: string | null
+  voidedAt: string | null
+}
+
+export type ExpenseInput = {
+  category: string
+  amountCentavos: number
+  spentOn: string
+  note: string
+}
+
+export type DayClose = {
+  id: string
+  closeDate: string
+  expectedCashCentavos: number
+  countedCashCentavos: number
+  expectedGcashCentavos: number
+  countedGcashCentavos: number
+  closedBy: string
+  note: string | null
+}
+
+export type CloseDayInput = {
+  countedCashCentavos: number
+  countedGcashCentavos: number
+  note: string
+}
+
 export type CheckInResult = {
   status: 'active' | 'expiring' | 'expired' | 'day_pass'
   alreadyCheckedIn: boolean
@@ -110,4 +178,21 @@ export interface Api {
   sellDayPass(input: SellDayPassInput): Promise<SaleResult>
   checkIn(memberId: string, overrideReason?: string): Promise<CheckInResult>
   todaySummary(): Promise<TodaySummary>
+  /** Owner only: the last `days` days, oldest first. Staff get an empty list. */
+  dailyStats(days: number): Promise<DayStat[]>
+
+  /** Whether today has been closed already. */
+  isDayClosed(): Promise<boolean>
+  /** A blind count: the result does not say what the records expected. */
+  closeDay(input: CloseDayInput): Promise<void>
+
+  // Owner only from here down.
+  moneySummary(days: number): Promise<MoneySummary>
+  planRevenue(days: number): Promise<PlanRevenue[]>
+  listPayments(days: number): Promise<PaymentRecord[]>
+  voidPayment(paymentId: string, reason: string): Promise<void>
+  listExpenses(days: number): Promise<ExpenseRecord[]>
+  addExpense(input: ExpenseInput): Promise<void>
+  voidExpense(expenseId: string, reason: string): Promise<void>
+  listCloses(): Promise<DayClose[]>
 }

@@ -35,8 +35,8 @@ export function LoginPage() {
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-5 py-10">
-      <p className="text-[15px] font-medium tracking-tight text-ink-2">Laced</p>
-      <h1 className="mt-1 text-[26px] font-medium tracking-tight">Sign in</h1>
+      <p className="text-[20px] font-semibold tracking-tight">Laced</p>
+      <h1 className="mt-5 text-[30px] font-semibold tracking-tight">Sign in</h1>
 
       <form onSubmit={submit} className="mt-6 grid gap-4">
         <fieldset disabled={demo} className="grid gap-4">

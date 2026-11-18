@@ -38,7 +38,7 @@ export function CheckInPage() {
             <div className="flex items-center gap-3">
               <Avatar name={member.fullName} large />
               <div className="min-w-0">
-                <h1 className="truncate text-[20px] font-medium tracking-tight">{member.fullName}</h1>
+                <h1 className="truncate text-[22px] font-semibold tracking-tight">{member.fullName}</h1>
                 <p className="text-[14px] tabular-nums text-ink-2">{member.phone}</p>
               </div>
             </div>
@@ -54,7 +54,7 @@ export function CheckInPage() {
 
   return (
     <div className="grid gap-4">
-      <h1 className="text-[22px] font-medium tracking-tight">Check in</h1>
+      <h1 className="text-[26px] font-semibold tracking-tight">Check in</h1>
 
       <label className="relative block">
         <span className="sr-only">Search by name or mobile number</span>

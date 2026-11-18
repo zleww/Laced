@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
-import { manilaDayStart, manilaToday } from './dates'
+import { addDays, manilaDayStart, manilaToday } from './dates'
 import { searchTerm } from './format'
 import type { Api, Member, MemberDetail, Plan, Session } from './types'
 
@@ -193,6 +193,140 @@ export function createSupabaseApi(supabase: SupabaseClient): Api {
         alreadyCheckedIn: result.already_checked_in,
         checkedInAt: result.checked_in_at ?? new Date().toISOString(),
       }
+    },
+
+    async dailyStats(days) {
+      const { data, error } = await supabase.rpc('analytics_daily', { p_days: days })
+      if (error) fail(error)
+      return ((data ?? []) as Row[]).map((row) => ({
+        day: row.day,
+        revenueCentavos: Number(row.revenue_centavos),
+        checkins: Number(row.checkins),
+      }))
+    },
+
+    async isDayClosed() {
+      const { data, error } = await supabase.rpc('is_day_closed')
+      if (error) fail(error)
+      return data === true
+    },
+
+    async closeDay({ countedCashCentavos, countedGcashCentavos, note }) {
+      await call('close_day', {
+        p_counted_cash_centavos: countedCashCentavos,
+        p_counted_gcash_centavos: countedGcashCentavos,
+        p_note: note,
+      })
+    },
+
+    async moneySummary(days) {
+      const { data, error } = await supabase.rpc('analytics_money', { p_days: days })
+      if (error) fail(error)
+      const row = ((data ?? []) as Row[])[0]
+      return {
+        revenueCentavos: Number(row?.revenue_centavos ?? 0),
+        cashCentavos: Number(row?.cash_centavos ?? 0),
+        gcashCentavos: Number(row?.gcash_centavos ?? 0),
+        expensesCentavos: Number(row?.expenses_centavos ?? 0),
+        voidCount: Number(row?.void_count ?? 0),
+      }
+    },
+
+    async planRevenue(days) {
+      const { data, error } = await supabase.rpc('analytics_plans', { p_days: days })
+      if (error) fail(error)
+      return ((data ?? []) as Row[]).map((row) => ({
+        planName: row.plan_name,
+        revenueCentavos: Number(row.revenue_centavos),
+        sales: Number(row.sales),
+      }))
+    },
+
+    async listPayments(days) {
+      const firstDay = addDays(manilaToday(), -(days - 1))
+      // payments points at staff three times (received, voided, discount approved),
+      // so the join has to name which link it means.
+      const { data, error } = await supabase
+        .from('payments')
+        .select(
+          'id, paid_at, guest_name, amount_centavos, discount_centavos, method, gcash_ref, voided_at, void_reason, members(full_name), plans(name), staff!payments_received_by_fkey(full_name)',
+        )
+        .gte('paid_at', manilaDayStart(firstDay))
+        .order('paid_at', { ascending: false })
+        .limit(200)
+      if (error) fail(error)
+      return ((data ?? []) as Row[]).map((row) => ({
+        id: row.id,
+        paidAt: row.paid_at,
+        payer: row.members?.full_name ?? row.guest_name ?? 'Guest',
+        planName: row.plans?.name ?? 'Plan',
+        amountCentavos: row.amount_centavos - row.discount_centavos,
+        method: row.method,
+        gcashRef: row.gcash_ref,
+        receivedBy: row.staff?.full_name ?? 'Staff',
+        voidedAt: row.voided_at,
+        voidReason: row.void_reason,
+      }))
+    },
+
+    async voidPayment(paymentId, reason) {
+      await call('void_payment', { p_payment_id: paymentId, p_reason: reason })
+    },
+
+    async listExpenses(days) {
+      const { data, error } = await supabase
+        .from('expenses')
+        .select('id, category, amount_centavos, spent_on, note, voided_at')
+        .gte('spent_on', addDays(manilaToday(), -(days - 1)))
+        .order('spent_on', { ascending: false })
+        .limit(200)
+      if (error) fail(error)
+      return ((data ?? []) as Row[]).map((row) => ({
+        id: row.id,
+        category: row.category,
+        amountCentavos: row.amount_centavos,
+        spentOn: row.spent_on,
+        note: row.note,
+        voidedAt: row.voided_at,
+      }))
+    },
+
+    async addExpense({ category, amountCentavos, spentOn, note }) {
+      const { data: auth } = await supabase.auth.getUser()
+      const { error } = await supabase.from('expenses').insert({
+        category: category.trim(),
+        amount_centavos: amountCentavos,
+        spent_on: spentOn,
+        note: note.trim() || null,
+        recorded_by: auth.user?.id,
+      })
+      if (error) fail(error)
+    },
+
+    async voidExpense(expenseId, reason) {
+      const { error } = await supabase.rpc('void_expense', { p_expense_id: expenseId, p_reason: reason })
+      if (error) fail(error)
+    },
+
+    async listCloses() {
+      const { data, error } = await supabase
+        .from('daily_closes')
+        .select(
+          'id, close_date, expected_cash_centavos, counted_cash_centavos, expected_gcash_centavos, counted_gcash_centavos, note, staff(full_name)',
+        )
+        .order('close_date', { ascending: false })
+        .limit(30)
+      if (error) fail(error)
+      return ((data ?? []) as Row[]).map((row) => ({
+        id: row.id,
+        closeDate: row.close_date,
+        expectedCashCentavos: row.expected_cash_centavos,
+        countedCashCentavos: row.counted_cash_centavos,
+        expectedGcashCentavos: row.expected_gcash_centavos,
+        countedGcashCentavos: row.counted_gcash_centavos,
+        closedBy: row.staff?.full_name ?? 'Staff',
+        note: row.note,
+      }))
     },
 
     async todaySummary() {

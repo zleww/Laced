@@ -7,7 +7,7 @@ import { AlertIcon, CheckIcon } from './icons'
 type Variant = 'primary' | 'secondary' | 'quiet'
 
 const variants: Record<Variant, string> = {
-  // One primary button per screen. It is the only place the accent fill appears.
+  // One primary button per screen: the solid highlight (white in dark mode, black in light).
   primary: 'bg-accent text-on-accent',
   secondary: 'bg-card text-ink border border-line',
   quiet: 'text-ink-2',
@@ -29,7 +29,7 @@ export function Button({
       type={type}
       disabled={disabled || busy}
       aria-busy={busy || undefined}
-      className={`inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-control px-4 text-[15px] font-medium transition-[transform,opacity] duration-150 ease-out active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100 ${variants[variant]} ${className}`}
+      className={`inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-control px-4 text-[15px] font-semibold transition-[transform,opacity] duration-150 ease-out active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100 ${variants[variant]} ${className}`}
       {...props}
     >
       {busy ? 'Working…' : children}

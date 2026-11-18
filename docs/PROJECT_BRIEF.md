@@ -45,7 +45,7 @@ Each staff member gets an **individual login**. No shared account, so every paym
 3. **(decided)** UI must be straightforward, few buttons.
 4. **(decided)** Gym takes **cash and GCash**.
 5. **(decided)** Wants a real analytics dashboard, not a basic summary.
-6. **(decided)** Colors: deep navy, warm off-white, grey, and one muted gold accent; plus a dark mode. See `DESIGN_SYSTEM.md`.
+6. **(decided)** Colors: monochrome, dark by default with a light mode toggle; color only for status and change. See `DESIGN_SYSTEM.md`.
 7. **(decided)** Trainer monthly price is ₱4,950. **Promo rates already apply to students** (no separate student promo).
 8. **(decided)** Considering NFC cards and QR scanning for identification, plus a separate gym-goer app compatible with this system.
 9. **(proposed)** Check-in identification: search first, then QR, then NFC as a progressive enhancement. See section 8.4.
@@ -58,7 +58,7 @@ Each staff member gets an **individual login**. No shared account, so every paym
 16. **(decided)** **No grace period.** Expired means expired the day after the end date.
 17. **(decided)** UI labels in **English**.
 18. **(decided)** Usually 1, sometimes 2 staff at the desk at the same time.
-19. **(decided)** The prototype uses the name **Laced** and the navy and gold palette. The gym's own name, logo, and colors come later, as a customization step after the owner approves.
+19. **(decided)** The prototype uses the name **Laced** and the monochrome theme. The gym's own name, logo, and colors come later, as a customization step after the owner approves.
 20. **(proposed)** GCash reconciliation method, see section 8.6. The method was left to the developer.
 
 ## 6. Rates and hours (transcribed from a photo of the gym's whiteboard)
@@ -193,7 +193,12 @@ The schema lives in `supabase/migrations/` and is the source of truth. Where it 
 - **`memberships.voided_at`** exists so that voiding a payment can cancel the membership it paid for.
 - **`daily_closes`** stores expected and counted amounts for both cash and GCash.
 - **Audit log** covers payments, memberships, plans, staff, expenses, and daily closes. Members are left out so that names and phone numbers do not survive a deletion request.
-- **Not built yet:** `void_payment`, `close_day`, discounts, expenses voiding, card assignment, member deletion, and the analytics functions (Phase 2 and 3).
+- **`analytics_daily(days)`** returns revenue and check-ins per Manila day for the owner dashboard. Staff get no rows.
+- **`void_payment(payment, reason)`** (owner only) keeps the row, records who and why, and cancels the membership that payment paid for. A voided GCash reference can be entered again.
+- **`close_day(counted cash, counted GCash, note)`** is a **blind count**: the desk types what it counted and is told only that the day is closed. The expected amounts and the difference are stored for the owner. Staff cannot read `daily_closes` at all. **(proposed)** This differs from section 8.6, which showed the totals to staff; confirm with the owner. One close per day; payments recorded after the close are not in that close.
+- **`void_expense`**, **`analytics_money(days)`** (revenue, cash, GCash, expenses, void count) and **`analytics_plans(days)`** (revenue per plan) are owner only.
+- **Money screen** (owner): revenue, expenses, net, revenue by plan, cash against GCash, the payment list with Void and CSV export, expenses, and day closes.
+- **Not built yet:** discounts, card assignment (QR and NFC), member deletion, and the remaining analytics (renewal rate, busiest-hours heatmap, per-staff collections).
 
 **Tests.** `npm test` runs the real migration files against an in-memory Postgres and checks access rules, price integrity, date rules, and the Manila day boundary.
 

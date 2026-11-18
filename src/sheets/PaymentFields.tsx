@@ -15,7 +15,7 @@ export function PlanPicker({ plans, selectedId, onSelect }: PlanPickerProps) {
   return (
     <fieldset>
       <legend className="mb-1.5 text-[13px] font-medium text-ink-2">Plan</legend>
-      <div className="divide-y divide-line overflow-hidden rounded-control border border-line bg-card">
+      <div className="divide-y divide-line overflow-hidden rounded-control border border-line bg-bg">
         {plans.map((plan) => (
           <label key={plan.id} className="flex min-h-12 cursor-pointer items-center gap-3 px-3.5 py-2.5">
             <input
@@ -52,7 +52,7 @@ export function PaymentFields({ plan, value, onChange }: PaymentFieldsProps) {
               <label
                 key={method}
                 className={`flex min-h-12 cursor-pointer items-center justify-center rounded-control border text-[15px] font-medium ${
-                  selected ? 'border-ink bg-ink text-bg' : 'border-line bg-card text-ink'
+                  selected ? 'border-ink bg-ink text-bg' : 'border-line bg-bg text-ink'
                 }`}
               >
                 <input

@@ -1,6 +1,16 @@
 import { addDays, daysBetween, manilaToday, membershipEnd } from './dates'
 import { searchTerm } from './format'
-import type { Api, Member, MembershipRecord, PaymentMethod, Plan, Role, Session } from './types'
+import type {
+  Api,
+  DayClose,
+  ExpenseRecord,
+  Member,
+  MembershipRecord,
+  PaymentMethod,
+  Plan,
+  Role,
+  Session,
+} from './types'
 
 // Demo data layer, used when no database is connected. Everything lives in
 // memory and resets on reload. It follows the same rules as the database
@@ -10,7 +20,20 @@ import type { Api, Member, MembershipRecord, PaymentMethod, Plan, Role, Session 
 type DemoMember = { id: string; memberNo: number; fullName: string; phone: string }
 type DemoMembership = MembershipRecord & { memberId: string; planId: string }
 type DemoCheckin = { id: string; memberId: string | null; day: string; checkedInAt: string; status: string }
-type DemoPayment = { amountCentavos: number; gcashRef: string | null; receivedBy: string; day: string }
+type DemoPayment = {
+  id: string
+  amountCentavos: number
+  method: PaymentMethod
+  gcashRef: string | null
+  receivedBy: string
+  day: string
+  paidAt: string
+  payer: string
+  planName: string
+  membershipId: string | null
+  voidedAt: string | null
+  voidReason: string | null
+}
 
 const SESSION_KEY = 'laced-demo-role'
 const users: Record<Role, Session> = {
@@ -46,6 +69,8 @@ const members: DemoMember[] = []
 const memberships: DemoMembership[] = []
 const checkins: DemoCheckin[] = []
 const payments: DemoPayment[] = []
+const expenses: ExpenseRecord[] = []
+const closes: DayClose[] = []
 let session: Session | null = null
 
 const newId = () => crypto.randomUUID()
@@ -123,7 +148,23 @@ function findPlan(id: string): Plan {
   return found
 }
 
-function takePayment(soldPlan: Plan, method: PaymentMethod, gcashRef: string, studentIdChecked: boolean) {
+function requireOwner(): Session {
+  const current = requireSession()
+  if (current.role !== 'owner') throw new Error("This account isn't allowed to do that.")
+  return current
+}
+
+const live = (item: DemoPayment) => item.voidedAt === null
+const withinDays = (day: string, days: number) => day >= addDays(manilaToday(), -(days - 1))
+
+function takePayment(
+  soldPlan: Plan,
+  method: PaymentMethod,
+  gcashRef: string,
+  studentIdChecked: boolean,
+  payer: string,
+  membershipId: string | null,
+) {
   if (soldPlan.category === 'student' && !studentIdChecked) {
     throw new Error('Check the school ID before selling a student plan')
   }
@@ -134,15 +175,23 @@ function takePayment(soldPlan: Plan, method: PaymentMethod, gcashRef: string, st
     if (!/^[A-Za-z0-9]{6,30}$/.test(reference)) {
       throw new Error('The GCash reference number should be 6 to 30 letters or digits')
     }
-    if (payments.some((item) => item.gcashRef === reference)) {
+    if (payments.some((item) => live(item) && item.gcashRef === reference)) {
       throw new Error('That GCash reference number is already recorded')
     }
   }
   payments.push({
+    id: newId(),
     amountCentavos: soldPlan.priceCentavos,
+    method,
     gcashRef: reference,
     receivedBy: requireSession().userId,
     day: manilaToday(),
+    paidAt: new Date().toISOString(),
+    payer,
+    planName: soldPlan.name,
+    membershipId,
+    voidedAt: null,
+    voidReason: null,
   })
 }
 
@@ -237,8 +286,9 @@ export const demoApi: Api = {
     }
     const endDate = membershipEnd(startDate, soldPlan.durationMonths + soldPlan.bonusMonths)
 
-    takePayment(soldPlan, method, gcashRef, studentIdChecked)
-    memberships.push({ id: newId(), memberId, planId, planName: soldPlan.name, startDate, endDate, kind })
+    const membershipId = newId()
+    takePayment(soldPlan, method, gcashRef, studentIdChecked, findMember(memberId).fullName, membershipId)
+    memberships.push({ id: membershipId, memberId, planId, planName: soldPlan.name, startDate, endDate, kind })
     return { amountCentavos: soldPlan.priceCentavos, endDate }
   },
 
@@ -257,10 +307,18 @@ export const demoApi: Api = {
         throw new Error('This member is already checked in today')
       }
     }
-    takePayment(soldPlan, method, gcashRef, studentIdChecked)
-    if (memberId) {
+    const membershipId = memberId ? newId() : null
+    takePayment(
+      soldPlan,
+      method,
+      gcashRef,
+      studentIdChecked,
+      memberId ? findMember(memberId).fullName : name!,
+      membershipId,
+    )
+    if (memberId && membershipId) {
       memberships.push({
-        id: newId(),
+        id: membershipId,
         memberId,
         planId,
         planName: soldPlan.name,
@@ -306,6 +364,161 @@ export const demoApi: Api = {
     return { status, alreadyCheckedIn: false, checkedInAt }
   },
 
+  async dailyStats(days) {
+    const current = requireSession()
+    await pause()
+    if (current.role !== 'owner') return []
+    const today = manilaToday()
+    return Array.from({ length: days }, (_, index) => {
+      const day = addDays(today, index - (days - 1))
+      if (day === today) {
+        return {
+          day,
+          revenueCentavos: payments
+            .filter((item) => live(item) && item.day === today)
+            .reduce((sum, item) => sum + item.amountCentavos, 0),
+          checkins: checkins.filter((item) => item.day === today).length,
+        }
+      }
+      // Made-up history for earlier days, steady from one reload to the next.
+      const seed = Number(day.slice(8)) + Number(day.slice(5, 7)) * 3
+      const sunday = new Date(day + 'T00:00:00Z').getUTCDay() === 0
+      return {
+        day,
+        revenueCentavos: (sunday ? 180000 : 420000) + ((seed * 7919) % 26) * 8500,
+        checkins: (sunday ? 14 : 31) + ((seed * 31) % 17),
+      }
+    })
+  },
+
+  async isDayClosed() {
+    requireSession()
+    return closes.some((item) => item.closeDate === manilaToday())
+  },
+
+  async closeDay({ countedCashCentavos, countedGcashCentavos, note }) {
+    const current = requireSession()
+    await pause()
+    const today = manilaToday()
+    if (closes.some((item) => item.closeDate === today)) throw new Error('Today is already closed')
+    const expected = (method: PaymentMethod) =>
+      payments
+        .filter((item) => live(item) && item.day === today && item.method === method)
+        .reduce((sum, item) => sum + item.amountCentavos, 0)
+    closes.unshift({
+      id: newId(),
+      closeDate: today,
+      expectedCashCentavos: expected('cash'),
+      countedCashCentavos,
+      expectedGcashCentavos: expected('gcash'),
+      countedGcashCentavos,
+      closedBy: current.fullName,
+      note: note.trim() || null,
+    })
+  },
+
+  async moneySummary(days) {
+    requireOwner()
+    await pause()
+    const inRange = payments.filter((item) => withinDays(item.day, days))
+    const sum = (list: DemoPayment[]) => list.reduce((total, item) => total + item.amountCentavos, 0)
+    const kept = inRange.filter(live)
+    return {
+      revenueCentavos: sum(kept),
+      cashCentavos: sum(kept.filter((item) => item.method === 'cash')),
+      gcashCentavos: sum(kept.filter((item) => item.method === 'gcash')),
+      expensesCentavos: expenses
+        .filter((item) => item.voidedAt === null && withinDays(item.spentOn, days))
+        .reduce((total, item) => total + item.amountCentavos, 0),
+      voidCount: inRange.length - kept.length,
+    }
+  },
+
+  async planRevenue(days) {
+    requireOwner()
+    await pause()
+    const byPlan = new Map<string, { revenueCentavos: number; sales: number }>()
+    for (const item of payments.filter((entry) => live(entry) && withinDays(entry.day, days))) {
+      const row = byPlan.get(item.planName) ?? { revenueCentavos: 0, sales: 0 }
+      row.revenueCentavos += item.amountCentavos
+      row.sales += 1
+      byPlan.set(item.planName, row)
+    }
+    return [...byPlan.entries()]
+      .map(([planName, row]) => ({ planName, ...row }))
+      .sort((a, b) => b.revenueCentavos - a.revenueCentavos)
+  },
+
+  async listPayments(days) {
+    requireOwner()
+    await pause()
+    return payments
+      .filter((item) => withinDays(item.day, days))
+      .map((item) => ({
+        id: item.id,
+        paidAt: item.paidAt,
+        payer: item.payer,
+        planName: item.planName,
+        amountCentavos: item.amountCentavos,
+        method: item.method,
+        gcashRef: item.gcashRef,
+        receivedBy: item.receivedBy === users.owner.userId ? users.owner.fullName : users.staff.fullName,
+        voidedAt: item.voidedAt,
+        voidReason: item.voidReason,
+      }))
+      .reverse()
+  },
+
+  async voidPayment(paymentId, reason) {
+    requireOwner()
+    await pause()
+    if (reason.trim().length < 3) throw new Error('Give a reason for voiding this payment')
+    const payment = payments.find((item) => item.id === paymentId)
+    if (!payment) throw new Error('Payment not found')
+    if (!live(payment)) throw new Error('This payment is already voided')
+    payment.voidedAt = new Date().toISOString()
+    payment.voidReason = reason.trim()
+    // Cancel the membership this payment paid for.
+    const index = memberships.findIndex((item) => item.id === payment.membershipId)
+    if (index >= 0) memberships.splice(index, 1)
+  },
+
+  async listExpenses(days) {
+    requireOwner()
+    await pause()
+    return expenses.filter((item) => withinDays(item.spentOn, days))
+  },
+
+  async addExpense({ category, amountCentavos, spentOn, note }) {
+    requireOwner()
+    await pause()
+    if (category.trim().length < 2) throw new Error('Enter what the expense was for')
+    if (!(amountCentavos > 0)) throw new Error('Enter an amount above zero')
+    expenses.unshift({
+      id: newId(),
+      category: category.trim(),
+      amountCentavos,
+      spentOn,
+      note: note.trim() || null,
+      voidedAt: null,
+    })
+  },
+
+  async voidExpense(expenseId, reason) {
+    requireOwner()
+    await pause()
+    if (reason.trim().length < 3) throw new Error('Give a reason for voiding this expense')
+    const expense = expenses.find((item) => item.id === expenseId && item.voidedAt === null)
+    if (!expense) throw new Error('Expense not found or already voided')
+    expense.voidedAt = new Date().toISOString()
+  },
+
+  async listCloses() {
+    requireOwner()
+    await pause()
+    return closes
+  },
+
   async todaySummary() {
     const current = requireSession()
     await pause()
@@ -313,7 +526,9 @@ export const demoApi: Api = {
     return {
       // Like the database: the owner sees the gym total, staff see their own collections.
       collectedCentavos: payments
-        .filter((item) => item.day === today && (current.role === 'owner' || item.receivedBy === current.userId))
+        .filter(
+          (item) => live(item) && item.day === today && (current.role === 'owner' || item.receivedBy === current.userId),
+        )
         .reduce((sum, item) => sum + item.amountCentavos, 0),
       checkins: checkins.filter((item) => item.day === today).length,
       expiring: members

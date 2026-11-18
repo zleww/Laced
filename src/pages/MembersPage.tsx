@@ -17,11 +17,11 @@ export function MembersPage() {
   return (
     <div className="grid gap-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-[22px] font-medium tracking-tight">Members</h1>
+        <h1 className="text-[26px] font-semibold tracking-tight">Members</h1>
         <button
           type="button"
           onClick={() => setRegistering(true)}
-          className="inline-flex min-h-11 items-center gap-1.5 rounded-control border border-line bg-card px-3.5 text-[14px] font-medium"
+          className="inline-flex min-h-11 items-center gap-1.5 rounded-full border border-line bg-card px-4 text-[14px] font-medium"
         >
           <PlusIcon />
           Register

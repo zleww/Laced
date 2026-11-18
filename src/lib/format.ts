@@ -30,3 +30,28 @@ export function searchTerm(query: string): string {
   const trimmed = query.trim()
   return /^[\d\s+-]+$/.test(trimmed) ? trimmed.replace(/\D/g, '') : trimmed
 }
+
+/** 3000000 centavos -> "₱30K", for chart axes. */
+export function formatPesoCompact(centavos: number): string {
+  return (
+    '₱' +
+    (centavos / 100).toLocaleString('en-PH', { notation: 'compact', maximumFractionDigits: 1 })
+  )
+}
+
+/**
+ * Turns typed pesos into whole centavos without using decimals in the math:
+ * "1,234.50" -> 123450. Returns null when the text is not a valid amount.
+ */
+export function parsePeso(text: string): number | null {
+  const cleaned = text.replace(/[₱,\s]/g, '')
+  const match = /^(\d{1,9})(?:\.(\d{1,2}))?$/.exec(cleaned)
+  if (!match) return null
+  return Number(match[1]) * 100 + Number((match[2] ?? '').padEnd(2, '0'))
+}
+
+/** Signed difference for the day close: "+₱50", "-₱50", or "Matches". */
+export function formatDifference(centavos: number): string {
+  if (centavos === 0) return 'Matches'
+  return (centavos > 0 ? '+' : '-') + formatPeso(Math.abs(centavos))
+}

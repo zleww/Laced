@@ -1,75 +1,66 @@
 # Design system — Laced
 
-Last updated: 2026-11-16. A restrained palette: deep navy ink, warm off-white, and one muted gold accent. Dark mode is a separately tuned set, not an inversion. Contrast numbers below were **computed** (WCAG 2 ratio). Anything not listed as measured has not been measured.
+Last updated: 2026-11-16. Monochrome and data-first: near-black panels with hairline borders, white as the one highlight, grey charts. Color appears only where it carries meaning (status, and up or down). Dark is the default; light mode is a toggle. One system serves the front desk, the owner dashboard, and the planned gym-goer app. Contrast numbers below were **computed** (WCAG 2 ratio). Anything not listed as measured has not been measured.
 
 ## 1. Principles
 
 1. **Few buttons.** The owner is about 30–40 and wants straightforward. One primary action per screen. Everything else is secondary or folded away.
 2. **The status is the biggest thing on the check-in screen.** Active, Expiring, Expired are read at a glance, across a counter.
 3. **Phone first, gym-floor conditions.** Bright and dim rooms, one thumb, tired eyes. Tap targets 48px or larger, high contrast, numeric keypad for phone numbers.
-4. **Calm.** This is a work tool. No moving backgrounds, no glass/blur, no bounce, no gradients, no decorative shadows.
+4. **Calm and monochrome.** This is a work tool. No colored gradients, no glass or blur, no bounce. The only decoration is a faint light falling from the top edge of the page and of dashboard panels.
 5. **Never color alone.** Every status has an icon and a text label.
 6. **Every number agrees.** One filter row scopes every panel below it.
 
 ## 2. Color tokens
 
-Gold is the **accent for the one primary action and small highlights**. It is **never used for text or thin lines on a light surface** (2.33:1 on white). Navy text sits on gold.
+The tokens live in `src/index.css` as CSS variables and are exposed to Tailwind there (`bg-card`, `text-ink-2`, `border-line`, and so on). Change a color in that file only. Dark values are on `:root`; light values apply when `<html>` has `data-theme="light"`. The choice is saved on the device (`src/lib/theme.ts`).
 
-The tokens live in `src/index.css` as CSS variables and are exposed to Tailwind there (`bg-card`, `text-ink-2`, `border-line`, and so on). Change a color in that file only.
-
-| Token | Light | Dark | Use |
+| Token | Dark (default) | Light | Use |
 |---|---|---|---|
-| `bg` | `#F4F4F2` | `#0B0F18` | page |
-| `card` | `#FFFFFF` | `#131926` | cards, sheets |
-| `ink` | `#0E1726` | `#ECEEF2` | primary text |
-| `ink-2` | `#525B6B` | `#A2AABA` | secondary text |
-| `ink-3` | `#6A7282` | `#8891A3` | captions, **on cards only in light mode** |
-| `line` | `#E4E5E1` | `#242C3D` | hairline borders |
-| `bar` / `on-bar` | `#0E1726` / `#FFFFFF` | `#0B0F18` / `#ECEEF2` | top bar |
-| `accent` / `on-accent` | `#D4A23A` / `#0E1726` | `#D4A23A` / `#0B0F18` | primary button |
-| `good` / `good-bg` | `#1B5E3A` / `#E3F0E7` | `#7FD4A0` / `#12281D` | Active |
-| `warn` / `warn-bg` | `#8A4A12` / `#F6E9D8` | `#EDB67A` / `#33230F` | Expiring (brown-orange, not gold) |
-| `bad` / `bad-bg` | `#8F2323` / `#F6E3E1` | `#F0A3A3` / `#351819` | Expired |
+| `bg` | `#09090B` | `#ECECEE` | page |
+| `card` | `#121214` | `#F7F7F8` | panels, sidebar, tab bar, sheets |
+| `raised` | `#1C1C20` | `#E2E2E6` | selected nav item, avatars, tooltips |
+| `ink` | `#F4F4F5` | `#09090B` | primary text |
+| `ink-2` | `#A1A1AA` | `#52525B` | secondary text |
+| `ink-3` | `#8B8B95` | `#63636C` | captions, axis labels |
+| `line` | `#26262B` | `#D6D6DC` | hairline borders |
+| `accent` / `on-accent` | `#FAFAFA` / `#09090B` | `#09090B` / `#FAFAFA` | primary button, selected pill |
+| `good` / `good-bg` | `#4ADE80` / `#11241A` | `#166534` / `#DCEFE2` | Active, increase |
+| `warn` / `warn-bg` | `#E9B949` / `#2A2210` | `#92590A` / `#F5E8CC` | Expiring |
+| `bad` / `bad-bg` | `#F87171` / `#2C1516` | `#B91C1C` / `#F8DEDE` | Expired, decrease |
+| `mark` | `#D4D4D8` | `#27272A` | chart line, hovered bar |
+| `mark-soft` | `#71717A` | `#71717A` | chart bars |
+| `grid` | `#222226` | `#E0E0E5` | chart gridlines |
 
-Follow `prefers-color-scheme` by default and allow a manual toggle through `data-theme` on the root element.
+The `sheen` utility adds the faint top light to a panel. It is decoration only.
 
 ### Measured contrast (WCAG 2)
 
-| Pair | Ratio |
-|---|---|
-| Light: ink on card / on page | 17.96 / 16.31 |
-| Light: secondary on card / on page | 6.85 / 6.22 |
-| Light: caption on card | 4.84 |
-| Light: caption on page | **4.39 (below 4.5, so captions never sit directly on the page; use `ink-2` there)** |
-| Light: navy on gold button | 7.72 |
-| Light: gold on white | **2.33, never for text or thin lines** |
-| Light: white on top bar | 17.96 |
-| Light: green / brown / red status text on its tint | 6.60 / 5.72 / 6.99 |
-| Dark: ink on page / on card | 16.50 / 15.13 |
-| Dark: secondary on card / on page | 7.53 / 8.21 |
-| Dark: caption on card / on page | 5.55 / 6.05 |
-| Dark: gold on card | 7.56 |
-| Dark: navy on gold button | 8.24 |
-| Dark: green / orange / red status text on its tint | 8.78 / 8.34 / 8.08 |
+| Pair | Dark | Light |
+|---|---|---|
+| ink on card / on page | 17.02 / 18.10 | 18.58 / 16.86 |
+| secondary on card / on raised | 7.30 / 6.63 | 7.22 / 5.98 |
+| caption on card / on page / on raised | 5.55 / 5.90 / 5.03 | 5.55 / 5.04 / 4.60 |
+| primary button text on its fill | 19.06 | 19.06 |
+| green on card / on its tint | 10.74 / 9.33 | 6.66 / 5.94 |
+| amber on card / on its tint | 10.25 / 8.62 | 5.37 / 4.73 |
+| red on card / on its tint | 6.76 / 6.19 | 6.04 / 5.08 |
+| chart line on card | 12.66 | 13.91 |
+| chart bars on card | 3.87 | 4.51 |
 
 ### Chart colors
 
-Only two categorical series exist: **Cash** and **GCash**. Color follows the entity: Cash is always blue, GCash is always gold-brown, in every chart and every filter state.
-
-- Light, on white: `#3A57A8` and `#BA7F00` (contrast against the surface 6.76 and 3.43).
-- Dark, on `#131926`: `#6F8AE0` and `#BC8A00` (5.35 and 5.67).
-- These were chosen for an earlier version of the palette. **Before building charts, re-check color-blind separation between the two series** on the current surfaces.
-- The accent gold is for buttons and highlights only, not chart marks.
-- Heatmap and other magnitude scales are **single-hue sequential**, 6 steps, lighter = fewer in light mode. Light ramp (navy): `#E6EAF4 #C3CCE4 #97A6D0 #6479B4 #38529A #1B2B55`. The dark-mode ramp is **not chosen yet**; pick it when the heatmap is built.
-- Part-to-whole across more than 3 items: use **ranked horizontal bars** in one hue (series 1). No pie or donut.
-- Never reuse status colors as series colors.
+- Charts are **single-series and grey**: the line and the hovered bar use `mark`, ordinary bars use `mark-soft`. Both clear 3:1 against the panel.
+- There is no categorical palette yet. If a chart ever needs two series (for example cash and GCash), choose and validate the pair then, and add a legend.
+- Status colors are never used as series colors.
+- Part-to-whole across more than 3 items: use **ranked horizontal bars** in one tone. No pie or donut.
 
 ## 3. Typography and spacing
 
-- **Inter** (variable font, self-hosted through `@fontsource-variable/inter`, SIL Open Font License) with a system sans fallback, so Android and iPhone look the same. Two weights only: 400 and 500. Sentence case everywhere.
+- **Inter** (variable, self-hosted through `@fontsource-variable/inter`, SIL Open Font License) with a system sans fallback. Three weights: 400 for text, 500 for labels, 600 for titles, figures, and buttons. Sentence case everywhere.
 - Hero figure 48px/500, one per view, **proportional** figures. Stat value 26px/500. Body 14–16px. Captions 12px. Minimum 11px.
 - `font-variant-numeric: tabular-nums` only in aligned columns (tables, axis ticks, money lists), never on large standalone numbers.
-- Radius: 12px cards, 8–10px controls. Hairlines 0.5–1px. Spacing in multiples of 4px. Group with spacing before adding borders.
+- Radius: 14px panels, 10px controls, fully rounded badges and filter pills. Hairlines 0.5–1px. Spacing in multiples of 4px. Group with spacing before adding borders.
 
 ## 4. UI rules
 
@@ -100,9 +91,9 @@ Only two categorical series exist: **Cash** and **GCash**. Color follows the ent
 
 ## 7. Screens (mobile first, portrait)
 
-**Navigation.** Bottom bar, at most 4 tabs: **Today · Check in · Members · Money**. Staff do not see Money (owner only). "Close today" is a staff action on the Today screen. Selected tab is stronger, not a different color family.
+**Navigation.** Destinations: **Dashboard · Check in · Members**, plus **Money** for the owner. On a phone they are a tab bar at the bottom, with a slim header holding the account, the theme toggle, and sign out. From tablet width up they move into a left sidebar. Desk screens stay in a narrow column at any width.
 
-**Today (owner).** Top bar with the app name ("Laced" in the prototype) and date. Collected today (large). Two stat tiles: Check-ins, Expiring soon (outlined to draw the eye). One gold primary button with a contextual label, "Review 9 renewals". Nothing else on first view.
+**Dashboard.** Title and the primary button "Check in a member". Three stat cards: collected today, check-ins today, expiring soon, each with a change against yesterday (arrow, amount, and the words "more" or "less"). For the owner only: one range filter (7, 14, 30 days) scoping a revenue area chart and a check-ins bar chart, each with a headline figure, a hover and keyboard tooltip, and a Table switch. Then the renewals due within 7 days. Staff see their own collections and no charts.
 
 **Check in (staff).** Search field first (numeric keypad option). Result card: avatar initials, name, plan. **Large status block** with icon + text + date. One primary button: **Check in**, or **Renew ₱{price}** when expired. Below, one muted line for the next matching member. QR and NFC buttons appear next to search only when supported.
 
@@ -120,13 +111,13 @@ States for every screen: loading (hold the previous content at reduced opacity, 
 
 Order, top to bottom:
 
-1. **Filter row**, one row above everything: Last 7 days, Last 30 days, Last 12 weeks. Selected chip uses the `ink` fill, not gold (gold is reserved for the one primary button).
-2. **Hero:** revenue for the range, 48px, with a small gold accent bar above the label, change vs the previous equal period (named, e.g. "vs previous 30 days"), and net after expenses.
+1. **Filter row**, one row above everything: Last 7 days, Last 30 days, Last 12 weeks. Selected chip uses the `ink` fill, not blue (blue is reserved for the one primary button).
+2. **Hero:** revenue for the range, 48px, with a small accent bar above the label, change vs the previous equal period (named, e.g. "vs previous 30 days"), and net after expenses.
 3. **Three stat tiles:** Active members, Renewal rate, Check-ins per day. Each has a value and a signed delta with an arrow icon, colored by direction (all up-is-good).
 4. **Revenue by payment method:** stacked columns, cash at the bottom, GCash on top. Daily columns for 7 and 30 days, weekly for 12 weeks. Legend always visible. Tooltip lists every series with the value first and the label second, plus total.
 5. **When the gym is busiest:** 7 weekday rows × 16 hour columns (7 AM–10 PM start hours), 6-step sequential fill, closed Sunday hours left empty. Headline states the busiest slot and the quietest weekday-midday slot. Legend "Fewer visits … More visits".
 6. **Revenue by plan:** ranked horizontal bars, one hue, value at the bar tip.
-7. **Renewals due this week:** up to 4 rows (name, plan, "Ends in N days" with a clock icon, price), "+N more", and the **one primary gold button**.
+7. **Renewals due this week:** up to 4 rows (name, plan, "Ends in N days" with a clock icon, price), "+N more", and the **one primary button**.
 
 **Mark specs.** Bars at most 24px thick, 4px rounded at the data end, square at the baseline. Lines 2px. Markers at least 8px with a 2px surface ring. 2px surface-colored gap between stacked segments and between touching bars (no stroke borders). Gridlines and axes are 1px solid hairlines, never dashed. Y ticks rounded; compact (`10K`) once the axis reaches 10,000. **Label selectively**, never a number on every point.
 

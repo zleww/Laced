@@ -47,7 +47,7 @@ export function MemberPage() {
       <div className="flex items-center gap-3">
         <Avatar name={member.fullName} large />
         <div className="min-w-0">
-          <h1 className="truncate text-[20px] font-medium tracking-tight">{member.fullName}</h1>
+          <h1 className="truncate text-[22px] font-semibold tracking-tight">{member.fullName}</h1>
           <p className="text-[14px] tabular-nums text-ink-2">
             {member.phone} · No. {member.memberNo}
           </p>

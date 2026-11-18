@@ -11,7 +11,7 @@ const looks: Record<MemberStatus, Look> = {
   active: { className: 'bg-good-bg text-good', icon: CheckIcon },
   expiring: { className: 'bg-warn-bg text-warn', icon: ClockIcon },
   expired: { className: 'bg-bad-bg text-bad', icon: AlertIcon },
-  none: { className: 'bg-bg text-ink-2', icon: MinusCircleIcon },
+  none: { className: 'bg-raised text-ink-2', icon: MinusCircleIcon },
 }
 
 function plural(count: number, word: string): string {
@@ -54,10 +54,12 @@ export function StatusBlock({ member }: { member: Member }) {
       ? 'Sell a plan to get started'
       : `${member.planName} · ${member.status === 'expired' ? 'ended' : 'until'} ${formatDate(member.validUntil!)}`
   return (
-    <div className={`flex items-center gap-3.5 rounded-card px-4 py-4 ${look.className}`}>
-      <look.icon className="size-8" />
+    <div className={`flex items-center gap-4 rounded-card border border-line px-5 py-5 ${look.className}`}>
+      <span className="grid size-12 flex-none place-items-center rounded-full bg-bg/40">
+        <look.icon className="size-6" />
+      </span>
       <div className="min-w-0">
-        <p className="text-[22px] font-medium leading-tight tracking-tight">{statusLabel(member)}</p>
+        <p className="text-[24px] font-semibold leading-tight tracking-tight">{statusLabel(member)}</p>
         <p className="mt-0.5 text-[14px]">{detail}</p>
       </div>
     </div>

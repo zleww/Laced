@@ -99,3 +99,51 @@ export const PlusIcon = (props: IconProps) => (
     <path d="M12 5v14M5 12h14" />
   </Icon>
 )
+
+export const GridIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <rect x="4" y="4" width="6.5" height="6.5" rx="1.5" />
+    <rect x="13.5" y="4" width="6.5" height="6.5" rx="1.5" />
+    <rect x="4" y="13.5" width="6.5" height="6.5" rx="1.5" />
+    <rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.5" />
+  </Icon>
+)
+
+export const WalletIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H17a1 1 0 0 1 1 1v2" />
+    <path d="M4 7.5v9A2.5 2.5 0 0 0 6.5 19H19a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1H6.5A2.5 2.5 0 0 1 4 7.500Z" />
+    <path d="M16 13.500h.01" />
+  </Icon>
+)
+
+export const SunIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="12" cy="12" r="3.75" />
+    <path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M5.6 18.4 7 17M17 7l1.4-1.4" />
+  </Icon>
+)
+
+export const MoonIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M19.5 14.2A7.8 7.8 0 0 1 9.8 4.500a7.800 7.800 0 1 0 9.700 9.700Z" />
+  </Icon>
+)
+
+export const ArrowUpIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M12 18.500V5.500M6.500 11 12 5.500 17.500 11" />
+  </Icon>
+)
+
+export const ArrowDownIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M12 5.500v13M6.500 13l5.500 5.500 5.500-5.500" />
+  </Icon>
+)
+
+export const LogOutIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M10 4.500H6.500a1.500 1.500 0 0 0-1.500 1.500v12a1.500 1.500 0 0 0 1.500 1.500H10M15 8l4 4-4 4M19 12H9.500" />
+  </Icon>
+)

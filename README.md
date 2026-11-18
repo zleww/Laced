@@ -2,7 +2,7 @@
 
 A phone-first gym management system: member records, memberships, payments, front-desk check-in, and an owner analytics dashboard. Built as a working prototype for a real neighborhood gym that currently runs on a paper logbook and paper membership cards.
 
-> **Status:** working prototype. Sign-in, Today, Check in, Members, selling and renewing plans, and day passes are built on top of a tested database schema. Voids, end-of-day close, and the owner dashboard are next.
+> **Status:** working prototype. Sign-in, an owner dashboard with charts, Check in, Members, selling and renewing plans, and day passes are built on top of a tested database schema. It also has an owner Money screen (revenue, expenses, net, voids, CSV export) and a blind end-of-day count. Discounts, QR and NFC cards, and deeper analytics are next.
 
 ## What it will do
 
@@ -45,6 +45,8 @@ The schema is plain SQL in `supabase/migrations/`, applied in file-name order:
 2. `functions`: the actions the app calls (register a member, sell or renew, day pass, check in)
 3. `access_rules`: grants and row-level security
 4. `seed_plans`: the starting price list
+5. `analytics_daily`: daily revenue and check-ins for the owner dashboard
+6. `money`: voiding payments and expenses, closing the day, and the owner's money totals
 
 The browser never sends a price and never writes to the money tables directly. It calls a database function with ids, and the function looks up the price and writes the payment and membership in one transaction.
 
@@ -60,6 +62,7 @@ The tests run the real migration files against [PGlite](https://pglite.dev), a P
 - **Price integrity:** no direct writes to payments; the charged amount always comes from the plans table
 - **Dates:** inclusive end dates, early renewal, and the Manila day boundary (11:30 PM counts as that day)
 - **Check-in:** expired members are refused, and a double tap counts once
+- **Money:** only the owner can void, a void cancels its membership, staff get no totals, and the day close hides the expected amounts from the person counting
 
 ## Documentation
 

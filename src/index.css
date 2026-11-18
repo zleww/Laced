@@ -4,72 +4,61 @@
 /*
   Design tokens. See docs/DESIGN_SYSTEM.md section 2.
   Colors are defined once here as CSS variables, then exposed to Tailwind
-  below, so `bg-card` or `text-ink-2` follow light and dark mode on their own.
+  below, so `bg-card` or `text-ink-2` follow the theme on their own.
+
+  The look: monochrome. Near-black panels with hairline borders, white as the
+  one highlight, grey for charts. Color appears only where it means something:
+  green, amber, and red for status and for up/down changes.
+
+  Dark is the default. Light mode is switched on with data-theme="light" on <html>.
 */
 
-:root,
-[data-theme='light'] {
-  --bg: #f4f4f2;
-  --card: #ffffff;
-  --ink: #0e1726;
-  --ink-2: #525b6b;
-  --ink-3: #6a7282; /* captions; only on cards, never on the page background */
-  --line: #e4e5e1;
-  --bar: #0e1726;
-  --on-bar: #ffffff;
-  --accent: #d4a23a;
-  --on-accent: #0e1726;
-  --good: #1b5e3a;
-  --good-bg: #e3f0e7;
-  --warn: #8a4a12;
-  --warn-bg: #f6e9d8;
-  --bad: #8f2323;
-  --bad-bg: #f6e3e1;
-  color-scheme: light;
-}
-
-/* Dark values: used when the phone is in dark mode (unless light is forced)... */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --bg: #0b0f18;
-    --card: #131926;
-    --ink: #eceef2;
-    --ink-2: #a2aaba;
-    --ink-3: #8891a3;
-    --line: #242c3d;
-    --bar: #0b0f18;
-    --on-bar: #eceef2;
-    --accent: #d4a23a;
-    --on-accent: #0b0f18;
-    --good: #7fd4a0;
-    --good-bg: #12281d;
-    --warn: #edb67a;
-    --warn-bg: #33230f;
-    --bad: #f0a3a3;
-    --bad-bg: #351819;
-    color-scheme: dark;
-  }
-}
-
-/* ...or when dark is forced by the manual toggle. Keep both blocks identical. */
-[data-theme='dark'] {
-  --bg: #0b0f18;
-  --card: #131926;
-  --ink: #eceef2;
-  --ink-2: #a2aaba;
-  --ink-3: #8891a3;
-  --line: #242c3d;
-  --bar: #0b0f18;
-  --on-bar: #eceef2;
-  --accent: #d4a23a;
-  --on-accent: #0b0f18;
-  --good: #7fd4a0;
-  --good-bg: #12281d;
-  --warn: #edb67a;
-  --warn-bg: #33230f;
-  --bad: #f0a3a3;
-  --bad-bg: #351819;
+:root {
+  --bg: #09090b;
+  --card: #121214;
+  --raised: #1c1c20; /* one step above a card: selected rows, inner tiles, avatars */
+  --ink: #f4f4f5;
+  --ink-2: #a1a1aa;
+  --ink-3: #8b8b95;
+  --line: #26262b;
+  --accent: #fafafa; /* the highlight: primary button, selected pill */
+  --on-accent: #09090b;
+  --good: #4ade80;
+  --good-bg: #11241a;
+  --warn: #e9b949;
+  --warn-bg: #2a2210;
+  --bad: #f87171;
+  --bad-bg: #2c1516;
+  /* Chart marks */
+  --mark: #d4d4d8; /* lines and the emphasised bar */
+  --mark-soft: #71717a; /* ordinary bars */
+  --grid: #222226;
+  /* A barely-there light from the top of the page and of the hero card. */
+  --sheen: rgb(255 255 255 / 0.07);
   color-scheme: dark;
+}
+
+[data-theme='light'] {
+  --bg: #ececee;
+  --card: #f7f7f8;
+  --raised: #e2e2e6;
+  --ink: #09090b;
+  --ink-2: #52525b;
+  --ink-3: #63636c;
+  --line: #d6d6dc;
+  --accent: #09090b;
+  --on-accent: #fafafa;
+  --good: #166534;
+  --good-bg: #dcefe2;
+  --warn: #92590a;
+  --warn-bg: #f5e8cc;
+  --bad: #b91c1c;
+  --bad-bg: #f8dede;
+  --mark: #27272a;
+  --mark-soft: #71717a;
+  --grid: #e0e0e5;
+  --sheen: rgb(255 255 255 / 0.9);
+  color-scheme: light;
 }
 
 @theme inline {
@@ -77,12 +66,11 @@
 
   --color-bg: var(--bg);
   --color-card: var(--card);
+  --color-raised: var(--raised);
   --color-ink: var(--ink);
   --color-ink-2: var(--ink-2);
   --color-ink-3: var(--ink-3);
   --color-line: var(--line);
-  --color-bar: var(--bar);
-  --color-on-bar: var(--on-bar);
   --color-accent: var(--accent);
   --color-on-accent: var(--on-accent);
   --color-good: var(--good);
@@ -91,16 +79,27 @@
   --color-warn-bg: var(--warn-bg);
   --color-bad: var(--bad);
   --color-bad-bg: var(--bad-bg);
+  --color-mark: var(--mark);
+  --color-mark-soft: var(--mark-soft);
+  --color-grid: var(--grid);
 
-  --radius-card: 12px;
+  --radius-card: 14px;
   --radius-control: 10px;
+}
+
+/* The subtle glow: a soft light falling from the top edge of a panel. */
+@utility sheen {
+  background-image: radial-gradient(120% 90% at 50% -30%, var(--sheen), transparent 60%);
 }
 
 @layer base {
   body {
-    background: var(--bg);
+    background-color: var(--bg);
+    background-image: radial-gradient(90% 50% at 50% -10%, var(--sheen), transparent 70%);
+    background-repeat: no-repeat;
     color: var(--ink);
     font-family: var(--font-sans);
+    font-feature-settings: 'cv11', 'ss01';
     -webkit-font-smoothing: antialiased;
     -webkit-tap-highlight-color: transparent;
   }

@@ -100,6 +100,20 @@ export function createSupabaseApi(supabase: SupabaseClient): Api {
     return data as Row
   }
 
+  // Staff logins are managed by the staff-admin function on Supabase's servers.
+  async function staffAdmin(body: Row): Promise<void> {
+    const { data, error } = await supabase.functions.invoke('staff-admin', { body })
+    if (!error) return
+    // The function answers with { error: "plain message" }; show that when there is one.
+    const context = (error as { context?: Response }).context
+    const message = context ? await context.json().then((json: Row) => json?.error, () => null) : null
+    if (message) throw new Error(message)
+    if (/failed to send|fetch/i.test(error.message)) {
+      throw new Error("Can't reach the staff-admin function. Check that it is deployed in Supabase.")
+    }
+    throw new Error(data?.error ?? 'Something went wrong. Try again.')
+  }
+
   return {
     mode: 'live',
 
@@ -363,6 +377,33 @@ export function createSupabaseApi(supabase: SupabaseClient): Api {
         closedBy: row.staff?.full_name ?? 'Staff',
         note: row.note,
       }))
+    },
+
+    async listStaffAccounts() {
+      const { data, error } = await supabase
+        .from('staff')
+        .select('id, full_name, role, active')
+        .order('active', { ascending: false })
+        .order('full_name')
+      if (error) fail(error)
+      return ((data ?? []) as Row[]).map((row) => ({
+        id: row.id,
+        fullName: row.full_name,
+        role: row.role,
+        active: row.active,
+      }))
+    },
+
+    async addStaffAccount(input) {
+      await staffAdmin({ action: 'create', ...input })
+    },
+
+    async setStaffPassword(staffId, password) {
+      await staffAdmin({ action: 'set_password', staffId, password })
+    },
+
+    async setStaffActive(staffId, active) {
+      await staffAdmin({ action: 'set_active', staffId, active })
     },
 
     async listEmployees() {

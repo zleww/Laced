@@ -138,6 +138,21 @@ export type Employee = {
   active: boolean
 }
 
+/** A login for the app: the owner or a front-desk account. */
+export type StaffAccount = {
+  id: string
+  fullName: string
+  role: Role
+  active: boolean
+}
+
+export type StaffAccountInput = {
+  fullName: string
+  email: string
+  password: string
+  role: Role
+}
+
 export type EmployeeInput = Omit<Employee, 'id'>
 
 /** One month's government deductions, in centavos. "Ee" is the employee's share, "Er" the gym's. */
@@ -276,6 +291,13 @@ export interface Api {
   addExpense(input: ExpenseInput): Promise<void>
   voidExpense(expenseId: string, reason: string): Promise<void>
   listCloses(): Promise<DayClose[]>
+
+  listStaffAccounts(): Promise<StaffAccount[]>
+  /** Creates a login and its staff row. Runs on the server, where the secret key lives. */
+  addStaffAccount(input: StaffAccountInput): Promise<void>
+  setStaffPassword(staffId: string, password: string): Promise<void>
+  /** Turning an account off locks it out of the app and of Supabase. */
+  setStaffActive(staffId: string, active: boolean): Promise<void>
 
   listEmployees(): Promise<Employee[]>
   /** Adds an employee, or updates one when an id is given. */

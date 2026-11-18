@@ -14,6 +14,7 @@ import type {
   Plan,
   Role,
   Session,
+  StaffAccount,
 } from './types'
 
 // Demo data layer, used when no database is connected. Everything lives in
@@ -80,6 +81,12 @@ const employees: Employee[] = [
   { id: 'emp-2', fullName: 'Jun Navarro', jobTitle: 'Coach', monthlyRateCentavos: 2500000, withContributions: true, active: true },
   { id: 'emp-3', fullName: 'Lito Ramos', jobTitle: 'Cleaner', monthlyRateCentavos: 1200000, withContributions: false, active: true },
 ]
+const staffAccounts: StaffAccount[] = Object.values(users).map((user) => ({
+  id: user.userId,
+  fullName: user.fullName,
+  role: user.role,
+  active: true,
+}))
 const payroll: Array<PayrollEntry & { voidedAt: string | null }> = []
 const activityLog: ActivityItem[] = []
 let session: Session | null = null
@@ -538,6 +545,36 @@ export const demoApi: Api = {
     requireOwner()
     await pause()
     return closes
+  },
+
+  async listStaffAccounts() {
+    requireOwner()
+    await pause()
+    return staffAccounts.map((account) => ({ ...account }))
+  },
+
+  async addStaffAccount({ fullName, email, password, role }) {
+    requireOwner()
+    await pause()
+    if (fullName.trim().length < 2) throw new Error('Enter their full name.')
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) throw new Error('Enter a valid email address.')
+    if (password.length < 10) throw new Error('Use a password of at least 10 characters.')
+    staffAccounts.push({ id: newId(), fullName: fullName.trim(), role, active: true })
+    log('settings', `Added account ${fullName.trim()}`)
+  },
+
+  async setStaffPassword(_staffId, password) {
+    requireOwner()
+    await pause()
+    if (password.length < 10) throw new Error('Use a password of at least 10 characters.')
+  },
+
+  async setStaffActive(staffId, active) {
+    const current = requireOwner()
+    await pause()
+    if (staffId === current.userId && !active) throw new Error("You can't turn off your own account.")
+    const account = staffAccounts.find((item) => item.id === staffId)
+    if (account) account.active = active
   },
 
   async listEmployees() {

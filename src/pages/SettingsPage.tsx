@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Navigate } from 'react-router'
 import { CheckIcon } from '../components/icons'
 import { PageHeader, Panel } from '../components/panels'
+import { StaffAccountsPanel } from '../components/StaffAccountsPanel'
 import { Button, Notice } from '../components/ui'
 import { api } from '../lib/api'
 import { useSession } from '../lib/auth'
@@ -90,6 +91,8 @@ export function SettingsPage() {
           </button>
         </Panel>
       </div>
+
+      <StaffAccountsPanel />
 
       <Panel title="Keeping the system safe">
         <ul className="grid gap-2 md:grid-cols-2">

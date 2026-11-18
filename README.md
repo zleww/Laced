@@ -14,6 +14,7 @@ A phone-first gym management system: member records, memberships, payments, fron
 - **Payroll:** employees with a monthly rate, and each month's pay with government contributions and withholding tax worked out by the database. Drafts are marked paid; paid entries are voided, never edited.
 - **Activity log:** every sale, void, check-in, registration, expense, day close, and payroll change, with who did it and when.
 - **Backups:** the owner downloads every record as one file from Settings.
+- **Staff accounts:** the owner adds logins, sets new passwords, and turns accounts off from Settings. This runs in a Supabase Edge Function (`supabase/functions/staff-admin`), because creating logins needs the secret key, which never reaches the browser.
 
 ## Stack
 

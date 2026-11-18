@@ -128,6 +128,87 @@ export type CloseDayInput = {
   note: string
 }
 
+export type Employee = {
+  id: string
+  fullName: string
+  jobTitle: string
+  monthlyRateCentavos: number
+  /** Off for workers the gym does not register with SSS, PhilHealth, and Pag-IBIG. */
+  withContributions: boolean
+  active: boolean
+}
+
+export type EmployeeInput = Omit<Employee, 'id'>
+
+/** One month's government deductions, in centavos. "Ee" is the employee's share, "Er" the gym's. */
+export type Deductions = {
+  sssEe: number
+  sssEr: number
+  sssEc: number
+  philhealthEe: number
+  philhealthEr: number
+  pagibigEe: number
+  pagibigEr: number
+  tax: number
+}
+
+export type PayrollEntry = {
+  id: string
+  employeeId: string
+  employeeName: string
+  jobTitle: string
+  periodMonth: string // YYYY-MM-01
+  grossCentavos: number
+  deductions: Deductions
+  otherCentavos: number
+  otherNote: string | null
+  netCentavos: number
+  status: 'draft' | 'paid'
+  paidAt: string | null
+}
+
+export type PayrollInput = {
+  employeeId: string
+  periodMonth: string
+  grossCentavos: number
+  otherCentavos: number
+  otherNote: string
+}
+
+export type ActivityKind = 'sale' | 'void' | 'expense' | 'close' | 'member' | 'checkin' | 'payroll' | 'settings'
+
+export type ActivityItem = {
+  at: string
+  actor: string
+  kind: ActivityKind
+  summary: string
+  amountCentavos: number | null
+}
+
+/** One Manila month on the Reports screen. */
+export type MonthStat = {
+  month: string // YYYY-MM-01
+  revenueCentavos: number
+  expensesCentavos: number
+  /** Gross pay plus the gym's share of contributions, for paid entries. */
+  payrollCentavos: number
+  checkins: number
+  newMembers: number
+}
+
+/** Tables the owner can download for a backup or a spreadsheet. */
+export type ExportTable =
+  | 'members'
+  | 'plans'
+  | 'memberships'
+  | 'payments'
+  | 'checkins'
+  | 'expenses'
+  | 'daily_closes'
+  | 'staff'
+  | 'employees'
+  | 'payroll_entries'
+
 export type CheckInResult = {
   status: 'active' | 'expiring' | 'expired' | 'day_pass'
   alreadyCheckedIn: boolean
@@ -195,4 +276,19 @@ export interface Api {
   addExpense(input: ExpenseInput): Promise<void>
   voidExpense(expenseId: string, reason: string): Promise<void>
   listCloses(): Promise<DayClose[]>
+
+  listEmployees(): Promise<Employee[]>
+  /** Adds an employee, or updates one when an id is given. */
+  saveEmployee(input: EmployeeInput, id?: string): Promise<void>
+  /** Entries for one month (YYYY-MM-01), voided ones left out. */
+  listPayroll(periodMonth: string): Promise<PayrollEntry[]>
+  /** Creates or recalculates a draft. The database works out the deductions. */
+  savePayroll(input: PayrollInput): Promise<void>
+  markPayrollPaid(entryId: string): Promise<void>
+  voidPayroll(entryId: string, reason: string): Promise<void>
+
+  activity(options: { limit: number; before?: string; kind?: ActivityKind }): Promise<ActivityItem[]>
+  monthlyReport(months: number): Promise<MonthStat[]>
+  /** Every row of a table, as stored, for CSV export and backups. */
+  exportTable(table: ExportTable): Promise<Record<string, unknown>[]>
 }

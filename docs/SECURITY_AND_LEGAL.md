@@ -23,6 +23,8 @@ Enable RLS on **every** table. Default deny. Staff and owner identity comes from
 | `expenses` | all | **none** | none |
 | `daily_closes` | all | insert via RPC; select own | none |
 | `audit_log` | select | none | none |
+| `employees` | all | **none** | none |
+| `payroll_entries` | select; write via RPC | **none** | none |
 | `workouts`, `workout_sets` (later) | **none by default** | **none** | own rows, full |
 
 Rules:

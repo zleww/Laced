@@ -1,7 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { addDays, manilaDayStart, manilaToday } from './dates'
 import { searchTerm } from './format'
-import type { Api, Member, MemberDetail, Plan, Session } from './types'
+import type { Api, Member, MemberDetail, PayrollEntry, Plan, Session } from './types'
 
 // The real data layer. Reads go through row-level security; every write goes
 // through a database function, so the browser never sends a price.
@@ -15,7 +15,17 @@ function fail(error: { message: string; code?: string }): never {
   if (error.code === '42501' || /permission denied|row-level security/i.test(error.message)) {
     throw new Error("This account isn't allowed to do that.")
   }
-  throw new Error(error.message)
+  // P0001 is a message our own database functions raise on purpose, written for people.
+  if (error.code === 'P0001') throw new Error(error.message)
+  // Anything else is a raw database message. Users get plain words instead.
+  if (error.code === '23505') throw new Error("That's already recorded. Search for it instead.")
+  if (error.code?.startsWith('22') || error.code?.startsWith('23')) {
+    throw new Error("Some details aren't valid. Check them and try again.")
+  }
+  if (error.code === 'PGRST301' || /jwt/i.test(error.message)) {
+    throw new Error('Your session ended. Sign in again.')
+  }
+  throw new Error('Something went wrong. Try again, and tell the owner if it keeps happening.')
 }
 
 function toMember(row: Row): Member {
@@ -29,6 +39,32 @@ function toMember(row: Row): Member {
     daysLeft: row.days_left,
     planId: row.plan_id,
     planName: row.plan_name,
+  }
+}
+
+function toPayroll(row: Row): PayrollEntry {
+  return {
+    id: row.id,
+    employeeId: row.employee_id,
+    employeeName: row.employees?.full_name ?? 'Employee',
+    jobTitle: row.employees?.job_title ?? '',
+    periodMonth: row.period_month,
+    grossCentavos: row.gross_centavos,
+    deductions: {
+      sssEe: row.sss_ee_centavos,
+      sssEr: row.sss_er_centavos,
+      sssEc: row.sss_ec_centavos,
+      philhealthEe: row.philhealth_ee_centavos,
+      philhealthEr: row.philhealth_er_centavos,
+      pagibigEe: row.pagibig_ee_centavos,
+      pagibigEr: row.pagibig_er_centavos,
+      tax: row.tax_centavos,
+    },
+    otherCentavos: row.other_deductions_centavos,
+    otherNote: row.other_note,
+    netCentavos: row.net_centavos,
+    status: row.status,
+    paidAt: row.paid_at,
   }
 }
 
@@ -327,6 +363,103 @@ export function createSupabaseApi(supabase: SupabaseClient): Api {
         closedBy: row.staff?.full_name ?? 'Staff',
         note: row.note,
       }))
+    },
+
+    async listEmployees() {
+      const { data, error } = await supabase
+        .from('employees')
+        .select('id, full_name, job_title, monthly_rate_centavos, with_contributions, active')
+        .order('active', { ascending: false })
+        .order('full_name')
+      if (error) fail(error)
+      return ((data ?? []) as Row[]).map((row) => ({
+        id: row.id,
+        fullName: row.full_name,
+        jobTitle: row.job_title,
+        monthlyRateCentavos: row.monthly_rate_centavos,
+        withContributions: row.with_contributions,
+        active: row.active,
+      }))
+    },
+
+    async saveEmployee(input, id) {
+      const row = {
+        full_name: input.fullName.trim(),
+        job_title: input.jobTitle.trim(),
+        monthly_rate_centavos: input.monthlyRateCentavos,
+        with_contributions: input.withContributions,
+        active: input.active,
+      }
+      const { error } = id
+        ? await supabase.from('employees').update(row).eq('id', id)
+        : await supabase.from('employees').insert(row)
+      if (error) fail(error)
+    },
+
+    async listPayroll(periodMonth) {
+      const { data, error } = await supabase
+        .from('payroll_entries')
+        .select('*, employees(full_name, job_title)')
+        .eq('period_month', periodMonth)
+        .is('voided_at', null)
+      if (error) fail(error)
+      return ((data ?? []) as Row[]).map(toPayroll).sort((a, b) => a.employeeName.localeCompare(b.employeeName))
+    },
+
+    async savePayroll({ employeeId, periodMonth, grossCentavos, otherCentavos, otherNote }) {
+      await call('save_payroll_entry', {
+        p_employee_id: employeeId,
+        p_period_month: periodMonth,
+        p_gross_centavos: grossCentavos,
+        p_other_centavos: otherCentavos,
+        p_other_note: otherNote,
+      })
+    },
+
+    async markPayrollPaid(entryId) {
+      await call('mark_payroll_paid', { p_entry_id: entryId })
+    },
+
+    async voidPayroll(entryId, reason) {
+      await call('void_payroll_entry', { p_entry_id: entryId, p_reason: reason })
+    },
+
+    async activity({ limit, before, kind }) {
+      const data = (await call('activity_feed', {
+        p_limit: limit,
+        p_before: before ?? null,
+        p_kind: kind ?? null,
+      })) as unknown as Row[]
+      return (data ?? []).map((row) => ({
+        at: row.at,
+        actor: row.actor,
+        kind: row.kind,
+        summary: row.summary,
+        amountCentavos: row.amount_centavos === null ? null : Number(row.amount_centavos),
+      }))
+    },
+
+    async monthlyReport(months) {
+      const data = (await call('analytics_monthly', { p_months: months })) as unknown as Row[]
+      return (data ?? []).map((row) => ({
+        month: row.month,
+        revenueCentavos: Number(row.revenue_centavos),
+        expensesCentavos: Number(row.expenses_centavos),
+        payrollCentavos: Number(row.payroll_centavos),
+        checkins: Number(row.checkins),
+        newMembers: Number(row.new_members),
+      }))
+    },
+
+    async exportTable(table) {
+      // The server sends at most 1,000 rows per request, so read in pages.
+      const all: Row[] = []
+      for (let from = 0; ; from += 1000) {
+        const { data, error } = await supabase.from(table).select('*').order('id').range(from, from + 999)
+        if (error) fail(error)
+        all.push(...((data ?? []) as Row[]))
+        if (!data || data.length < 1000) return all
+      }
     },
 
     async todaySummary() {

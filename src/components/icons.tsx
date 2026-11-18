@@ -117,6 +117,40 @@ export const WalletIcon = (props: IconProps) => (
   </Icon>
 )
 
+export const ChartIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M4 20h16" />
+    <path d="M7 16v-5M12 16V6M17 16v-8" />
+  </Icon>
+)
+
+export const PayrollIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <rect x="3" y="6" width="18" height="12" rx="2" />
+    <circle cx="12" cy="12" r="2.5" />
+    <path d="M6.5 9.5v.01M17.5 14.5v.01" />
+  </Icon>
+)
+
+export const ActivityIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M3 12h4l2.5-6 5 12 2.5-6H21" />
+  </Icon>
+)
+
+export const SettingsIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="12" cy="12" r="3" />
+    <path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8" />
+  </Icon>
+)
+
+export const MoreIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M5 12h.01M12 12h.01M19 12h.01" strokeWidth="3" />
+  </Icon>
+)
+
 export const SunIcon = (props: IconProps) => (
   <Icon {...props}>
     <circle cx="12" cy="12" r="3.75" />

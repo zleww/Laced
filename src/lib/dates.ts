@@ -68,6 +68,32 @@ export function formatWeekday(day: string): string {
   }).format(toUtc(day))
 }
 
+/** The first day of the Manila month: "2026-11-01". */
+export function thisMonth(): string {
+  return manilaToday().slice(0, 8) + '01'
+}
+
+/** Moves a YYYY-MM-01 month forward or back. */
+export function addMonths(month: string, count: number): string {
+  const value = toUtc(month)
+  value.setUTCMonth(value.getUTCMonth() + count)
+  return toDay(value)
+}
+
+/** "November 2026", or "Nov 2026" when short. */
+export function formatMonth(month: string, short = false): string {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'UTC',
+    month: short ? 'short' : 'long',
+    year: 'numeric',
+  }).format(toUtc(month))
+}
+
+/** "Mon, Nov 16, 6:02 PM" in Manila time, from a full timestamp. */
+export function formatDateTime(timestamp: string): string {
+  return `${formatWeekday(manilaToday(new Date(timestamp)))}, ${formatTime(timestamp)}`
+}
+
 /** "6:02 PM" in Manila time, from a full timestamp. */
 export function formatTime(timestamp: string): string {
   return new Intl.DateTimeFormat('en-US', {

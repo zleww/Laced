@@ -4,20 +4,42 @@ import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { formatWeekday, manilaToday } from '../lib/dates'
 import { initials } from '../lib/format'
+import { useIdleSignOut } from '../lib/idle'
 import { useTheme } from '../lib/theme'
-import { CheckCircleIcon, GridIcon, LogOutIcon, MoonIcon, SunIcon, UsersIcon, WalletIcon } from './icons'
+import {
+  ActivityIcon,
+  ChartIcon,
+  CheckCircleIcon,
+  GridIcon,
+  LogOutIcon,
+  MoonIcon,
+  MoreIcon,
+  PayrollIcon,
+  SettingsIcon,
+  SunIcon,
+  UsersIcon,
+  WalletIcon,
+} from './icons'
 import { Loading } from './ui'
 
-type Tab = { to: string; label: string; icon: (props: { className?: string }) => ReactNode; ownerOnly?: boolean }
+type Tab = { to: string; label: string; icon: (props: { className?: string }) => ReactNode }
 
-const tabs: Tab[] = [
+// Grouped the same way on every screen size. Hiding owner screens from staff is
+// a convenience; the database is what keeps staff out of the numbers.
+const deskTabs: Tab[] = [
   { to: '/', label: 'Dashboard', icon: GridIcon },
   { to: '/check-in', label: 'Check in', icon: CheckCircleIcon },
   { to: '/members', label: 'Members', icon: UsersIcon },
-  { to: '/money', label: 'Money', icon: WalletIcon, ownerOnly: true },
 ]
-
-const allTabs = tabs
+const businessTabs: Tab[] = [
+  { to: '/money', label: 'Money', icon: WalletIcon },
+  { to: '/reports', label: 'Reports', icon: ChartIcon },
+  { to: '/payroll', label: 'Payroll', icon: PayrollIcon },
+]
+const workspaceTabs: Tab[] = [
+  { to: '/activity', label: 'Activity', icon: ActivityIcon },
+  { to: '/settings', label: 'Settings', icon: SettingsIcon },
+]
 
 const iconButton =
   'grid size-10 flex-none place-items-center rounded-control border border-line bg-card text-ink-2 hover:text-ink'
@@ -28,12 +50,24 @@ const iconButton =
 export function AppLayout() {
   const { session, signOut } = useAuth()
   const [theme, toggleTheme] = useTheme()
+  // The desk phone is shared: sign out after a while with no one using it.
+  useIdleSignOut(Boolean(session), signOut)
 
   if (session === undefined) return <Loading />
   if (session === null) return <Navigate to="/login" replace />
 
-  // Hiding the Money tab is a convenience. The database is what keeps staff out.
-  const tabs = allTabs.filter((tab) => !tab.ownerOnly || session.role === 'owner')
+  const isOwner = session.role === 'owner'
+  const groups: Array<[string, Tab[]]> = isOwner
+    ? [
+        ['Desk', deskTabs],
+        ['Business', businessTabs],
+        ['Workspace', workspaceTabs],
+      ]
+    : [['Desk', deskTabs]]
+  // The phone tab bar has room for five: the desk, Money, and More for the rest.
+  const phoneTabs = isOwner
+    ? [...deskTabs, businessTabs[0], { to: '/more', label: 'More', icon: MoreIcon }]
+    : deskTabs
 
   const themeButton = (
     <button
@@ -60,33 +94,40 @@ export function AppLayout() {
       </span>
       <span className="min-w-0">
         <span className="block truncate text-[13px] font-medium">{session.fullName}</span>
-        <span className="block text-[12px] text-ink-3">{session.role === 'owner' ? 'Owner' : 'Staff'}</span>
+        <span className="block text-[12px] text-ink-3">{isOwner ? 'Owner' : 'Staff'}</span>
       </span>
     </div>
   )
 
   return (
-    <div className="min-h-dvh md:grid md:grid-cols-[232px_1fr]">
+    <div className="min-h-dvh md:grid md:grid-cols-[232px_1fr] print:block">
       {/* Sidebar: laptop and wider */}
-      <aside className="sticky top-0 hidden h-dvh flex-col border-r border-line bg-card px-3 py-4 md:flex">
+      <aside className="sticky top-0 hidden h-dvh flex-col overflow-y-auto border-r border-line bg-card px-3 py-4 md:flex print:hidden">
         <p className="px-3 text-[17px] font-semibold tracking-tight">Laced</p>
         <p className="px-3 text-[12px] text-ink-3">{formatWeekday(manilaToday())}</p>
 
-        <nav aria-label="Main" className="mt-6 grid gap-0.5">
-          {tabs.map((tab) => (
-            <NavLink
-              key={tab.to}
-              to={tab.to}
-              end={tab.to === '/'}
-              className={({ isActive }) =>
-                `flex min-h-10 items-center gap-2.5 rounded-control px-3 text-[14px] ${
-                  isActive ? 'bg-raised font-medium text-ink' : 'text-ink-2 hover:text-ink'
-                }`
-              }
-            >
-              <tab.icon className="size-[18px]" />
-              {tab.label}
-            </NavLink>
+        <nav aria-label="Main" className="mt-5 grid gap-4">
+          {groups.map(([title, tabs]) => (
+            <div key={title}>
+              {isOwner && <p className="mb-1 px-3 text-[12px] text-ink-3">{title}</p>}
+              <div className="grid gap-0.5">
+                {tabs.map((tab) => (
+                  <NavLink
+                    key={tab.to}
+                    to={tab.to}
+                    end={tab.to === '/'}
+                    className={({ isActive }) =>
+                      `flex min-h-10 items-center gap-2.5 rounded-control px-3 text-[14px] ${
+                        isActive ? 'bg-raised font-medium text-ink' : 'text-ink-2 hover:text-ink'
+                      }`
+                    }
+                  >
+                    <tab.icon className="size-[18px]" />
+                    {tab.label}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
           ))}
         </nav>
 
@@ -101,7 +142,7 @@ export function AppLayout() {
 
       <div className="flex min-h-dvh min-w-0 flex-col">
         {/* Header: phone only */}
-        <header className="flex items-center justify-between gap-3 border-b border-line px-4 py-3 md:hidden">
+        <header className="flex items-center justify-between gap-3 border-b border-line px-4 py-3 md:hidden print:hidden">
           {account}
           <div className="flex gap-2">
             {themeButton}
@@ -110,22 +151,25 @@ export function AppLayout() {
         </header>
 
         {api.mode === 'demo' && (
-          <p className="border-b border-line bg-warn-bg px-4 py-1.5 text-center text-[12px] font-medium text-warn">
+          <p className="border-b border-line bg-warn-bg px-4 py-1.5 text-center text-[12px] font-medium text-warn print:hidden">
             Demo data. Changes reset on reload.
           </p>
         )}
 
-        <main className="mx-auto w-full max-w-5xl flex-1 px-4 pt-5 pb-28 md:px-8 md:pt-8 md:pb-10">
+        <main className="mx-auto w-full max-w-5xl flex-1 px-4 pt-5 pb-28 md:px-8 md:pt-8 md:pb-10 print:p-0">
           <Outlet />
         </main>
 
         {/* Tab bar: phone only */}
         <nav
           aria-label="Main"
-          className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-card pb-[env(safe-area-inset-bottom)] md:hidden"
+          className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-card pb-[env(safe-area-inset-bottom)] md:hidden print:hidden"
         >
-          <div className={`mx-auto grid max-w-xl gap-1 p-1.5 ${tabs.length === 4 ? 'grid-cols-4' : 'grid-cols-3'}`}>
-            {tabs.map((tab) => (
+          <div
+            className="mx-auto grid max-w-xl gap-1 p-1.5"
+            style={{ gridTemplateColumns: `repeat(${phoneTabs.length}, minmax(0, 1fr))` }}
+          >
+            {phoneTabs.map((tab) => (
               <NavLink
                 key={tab.to}
                 to={tab.to}

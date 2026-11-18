@@ -1,12 +1,16 @@
 import { addDays, daysBetween, manilaToday, membershipEnd } from './dates'
 import { searchTerm } from './format'
+import { computeDeductions, employerShare, netPay } from './payroll'
 import type {
   Api,
+  ActivityItem,
   DayClose,
+  Employee,
   ExpenseRecord,
   Member,
   MembershipRecord,
   PaymentMethod,
+  PayrollEntry,
   Plan,
   Role,
   Session,
@@ -71,6 +75,13 @@ const checkins: DemoCheckin[] = []
 const payments: DemoPayment[] = []
 const expenses: ExpenseRecord[] = []
 const closes: DayClose[] = []
+const employees: Employee[] = [
+  { id: 'emp-1', fullName: 'Rhea Torres', jobTitle: 'Front desk', monthlyRateCentavos: 1800000, withContributions: true, active: true },
+  { id: 'emp-2', fullName: 'Jun Navarro', jobTitle: 'Coach', monthlyRateCentavos: 2500000, withContributions: true, active: true },
+  { id: 'emp-3', fullName: 'Lito Ramos', jobTitle: 'Cleaner', monthlyRateCentavos: 1200000, withContributions: false, active: true },
+]
+const payroll: Array<PayrollEntry & { voidedAt: string | null }> = []
+const activityLog: ActivityItem[] = []
 let session: Session | null = null
 
 const newId = () => crypto.randomUUID()
@@ -154,6 +165,10 @@ function requireOwner(): Session {
   return current
 }
 
+function log(kind: ActivityItem['kind'], summary: string, amountCentavos: number | null = null) {
+  activityLog.unshift({ at: new Date().toISOString(), actor: requireSession().fullName, kind, summary, amountCentavos })
+}
+
 const live = (item: DemoPayment) => item.voidedAt === null
 const withinDays = (day: string, days: number) => day >= addDays(manilaToday(), -(days - 1))
 
@@ -193,6 +208,7 @@ function takePayment(
     voidedAt: null,
     voidReason: null,
   })
+  log('sale', `${soldPlan.name} for ${payer} (${method === 'gcash' ? 'GCash' : 'cash'})`, soldPlan.priceCentavos)
 }
 
 export const demoApi: Api = {
@@ -361,6 +377,7 @@ export const demoApi: Api = {
     }
     const checkedInAt = new Date().toISOString()
     checkins.push({ id: newId(), memberId, day: today, checkedInAt, status })
+    log('checkin', `Checked in ${member.fullName}${overrideReason ? ` (override: ${overrideReason.trim()})` : ''}`)
     return { status, alreadyCheckedIn: false, checkedInAt }
   },
 
@@ -415,6 +432,7 @@ export const demoApi: Api = {
       closedBy: current.fullName,
       note: note.trim() || null,
     })
+    log('close', 'Closed the day', countedCashCentavos + countedGcashCentavos)
   },
 
   async moneySummary(days) {
@@ -478,6 +496,7 @@ export const demoApi: Api = {
     if (!live(payment)) throw new Error('This payment is already voided')
     payment.voidedAt = new Date().toISOString()
     payment.voidReason = reason.trim()
+    log('void', `Voided ${payment.planName} for ${payment.payer}: ${reason.trim()}`, payment.amountCentavos)
     // Cancel the membership this payment paid for.
     const index = memberships.findIndex((item) => item.id === payment.membershipId)
     if (index >= 0) memberships.splice(index, 1)
@@ -502,6 +521,7 @@ export const demoApi: Api = {
       note: note.trim() || null,
       voidedAt: null,
     })
+    log('expense', category.trim() + (note.trim() ? `: ${note.trim()}` : ''), amountCentavos)
   },
 
   async voidExpense(expenseId, reason) {
@@ -511,12 +531,167 @@ export const demoApi: Api = {
     const expense = expenses.find((item) => item.id === expenseId && item.voidedAt === null)
     if (!expense) throw new Error('Expense not found or already voided')
     expense.voidedAt = new Date().toISOString()
+    log('void', `Voided expense ${expense.category}: ${reason.trim()}`, expense.amountCentavos)
   },
 
   async listCloses() {
     requireOwner()
     await pause()
     return closes
+  },
+
+  async listEmployees() {
+    requireOwner()
+    await pause()
+    return [...employees].sort((a, b) => Number(b.active) - Number(a.active) || a.fullName.localeCompare(b.fullName))
+  },
+
+  async saveEmployee(input, id) {
+    requireOwner()
+    await pause()
+    if (input.fullName.trim().length < 2) throw new Error('Enter the employee name')
+    if (input.jobTitle.trim().length < 2) throw new Error('Enter the position')
+    if (!(input.monthlyRateCentavos > 0)) throw new Error('Enter a monthly rate above zero')
+    const row = { ...input, fullName: input.fullName.trim(), jobTitle: input.jobTitle.trim() }
+    const existing = id ? employees.find((item) => item.id === id) : undefined
+    if (existing) {
+      Object.assign(existing, row)
+      log('settings', `Changed employee ${row.fullName}`)
+    } else {
+      employees.push({ id: newId(), ...row })
+      log('settings', `Added employee ${row.fullName}`)
+    }
+  },
+
+  async listPayroll(periodMonth) {
+    requireOwner()
+    await pause()
+    return payroll
+      .filter((item) => item.periodMonth === periodMonth && item.voidedAt === null)
+      .sort((a, b) => a.employeeName.localeCompare(b.employeeName))
+  },
+
+  async savePayroll({ employeeId, periodMonth, grossCentavos, otherCentavos, otherNote }) {
+    requireOwner()
+    await pause()
+    const employee = employees.find((item) => item.id === employeeId)
+    if (!employee) throw new Error('Employee not found')
+    if (!(grossCentavos > 0)) throw new Error('Enter the gross pay')
+    const deductions = computeDeductions(grossCentavos, employee.withContributions)
+    const net = netPay(grossCentavos, deductions, otherCentavos)
+    if (net < 0) throw new Error('Deductions are more than the gross pay')
+    const existing = payroll.find(
+      (item) => item.employeeId === employeeId && item.periodMonth === periodMonth && item.voidedAt === null,
+    )
+    if (existing?.status === 'paid') throw new Error('This month is already paid. Void it first to change it.')
+    const values = {
+      grossCentavos,
+      deductions,
+      otherCentavos,
+      otherNote: otherNote.trim() || null,
+      netCentavos: net,
+    }
+    if (existing) {
+      Object.assign(existing, values)
+      log('payroll', `Recalculated pay for ${employee.fullName}`, net)
+    } else {
+      payroll.push({
+        id: newId(),
+        employeeId,
+        employeeName: employee.fullName,
+        jobTitle: employee.jobTitle,
+        periodMonth,
+        status: 'draft',
+        paidAt: null,
+        voidedAt: null,
+        ...values,
+      })
+      log('payroll', `Drafted pay for ${employee.fullName}`, net)
+    }
+  },
+
+  async markPayrollPaid(entryId) {
+    requireOwner()
+    await pause()
+    const entry = payroll.find((item) => item.id === entryId && item.status === 'draft' && item.voidedAt === null)
+    if (!entry) throw new Error('Entry not found, already paid, or voided')
+    entry.status = 'paid'
+    entry.paidAt = new Date().toISOString()
+    log('payroll', `Paid ${entry.employeeName}`, entry.netCentavos)
+  },
+
+  async voidPayroll(entryId, reason) {
+    requireOwner()
+    await pause()
+    if (reason.trim().length < 3) throw new Error('Give a reason for voiding this entry')
+    const entry = payroll.find((item) => item.id === entryId && item.voidedAt === null)
+    if (!entry) throw new Error('Entry not found or already voided')
+    entry.voidedAt = new Date().toISOString()
+    log('payroll', `Voided pay for ${entry.employeeName}: ${reason.trim()}`, entry.netCentavos)
+  },
+
+  async activity({ limit, before, kind }) {
+    requireOwner()
+    await pause()
+    return activityLog
+      .filter((item) => (!before || item.at < before) && (!kind || item.kind === kind))
+      .slice(0, limit)
+  },
+
+  async monthlyReport(months) {
+    requireOwner()
+    await pause()
+    const thisMonth = manilaToday().slice(0, 8) + '01'
+    return Array.from({ length: months }, (_, index) => {
+      const date = new Date(thisMonth + 'T00:00:00Z')
+      date.setUTCMonth(date.getUTCMonth() - (months - 1 - index))
+      const month = date.toISOString().slice(0, 10)
+      if (month === thisMonth) {
+        const prefix = month.slice(0, 7)
+        return {
+          month,
+          revenueCentavos: payments
+            .filter((item) => live(item) && item.day.startsWith(prefix))
+            .reduce((sum, item) => sum + item.amountCentavos, 0),
+          expensesCentavos: expenses
+            .filter((item) => item.voidedAt === null && item.spentOn.startsWith(prefix))
+            .reduce((sum, item) => sum + item.amountCentavos, 0),
+          payrollCentavos: payroll
+            .filter((item) => item.voidedAt === null && item.status === 'paid' && item.periodMonth === month)
+            .reduce((sum, item) => sum + item.grossCentavos + employerShare(item.deductions), 0),
+          checkins: checkins.filter((item) => item.day.startsWith(prefix)).length,
+          newMembers: 0,
+        }
+      }
+      // Made-up history for earlier months, steady from one reload to the next.
+      const seed = date.getUTCMonth() + 1
+      return {
+        month,
+        revenueCentavos: 9000000 + ((seed * 7919) % 13) * 450000,
+        expensesCentavos: 4200000 + ((seed * 31) % 7) * 150000,
+        payrollCentavos: 5600000,
+        checkins: 700 + ((seed * 17) % 11) * 25,
+        newMembers: 8 + ((seed * 13) % 9),
+      }
+    })
+  },
+
+  async exportTable(table) {
+    requireOwner()
+    await pause()
+    const tables: Record<string, unknown[]> = {
+      members,
+      plans,
+      memberships,
+      payments,
+      checkins,
+      expenses,
+      daily_closes: closes,
+      staff: Object.values(users),
+      employees,
+      payroll_entries: payroll,
+    }
+    return (tables[table] ?? []) as Record<string, unknown>[]
   },
 
   async todaySummary() {

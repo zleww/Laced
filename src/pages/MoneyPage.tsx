@@ -1,7 +1,7 @@
-import type { ReactNode } from 'react'
 import { useState } from 'react'
 import { Navigate } from 'react-router'
 import { PlusIcon } from '../components/icons'
+import { Bar, Empty, Panel, Stat, smallButton } from '../components/panels'
 import { Loading, Notice } from '../components/ui'
 import { api } from '../lib/api'
 import { useSession } from '../lib/auth'
@@ -14,8 +14,6 @@ import { ExpenseSheet } from '../sheets/ExpenseSheet'
 import { ReasonSheet } from '../sheets/ReasonSheet'
 
 const ranges = [7, 14, 30]
-const smallButton =
-  'inline-flex min-h-9 items-center gap-1.5 rounded-full border border-line px-3 text-[12px] font-medium text-ink-2 hover:text-ink'
 
 // The owner's money screen. Everything here comes from owner-only database
 // functions and tables; a staff account that lands here is sent back.
@@ -304,41 +302,6 @@ export function MoneyPage() {
         }}
       />
       <ExpenseSheet open={addingExpense} onClose={() => setAddingExpense(false)} onAdded={() => changed('Expense added.')} />
-    </div>
-  )
-}
-
-function Stat({ label, value, note, wide }: { label: string; value: string; note: string; wide?: boolean }) {
-  return (
-    <div className={`sheen rounded-card border border-line bg-card p-4 ${wide ? 'col-span-2 md:col-span-1' : ''}`}>
-      <p className="text-[13px] text-ink-2">{label}</p>
-      <p className="mt-2 text-[28px] font-semibold leading-none tracking-tight tabular-nums">{value}</p>
-      <p className="mt-2 text-[12px] text-ink-3">{note}</p>
-    </div>
-  )
-}
-
-function Panel({ title, action, children }: { title: string; action?: ReactNode; children: ReactNode }) {
-  return (
-    <section className="min-w-0 rounded-card border border-line bg-card p-4 md:p-5">
-      <div className="mb-3 flex min-h-9 items-center justify-between gap-3">
-        <h2 className="text-[13px] text-ink-2">{title}</h2>
-        {action}
-      </div>
-      {children}
-    </section>
-  )
-}
-
-function Empty({ children }: { children: ReactNode }) {
-  return <p className="text-[14px] text-ink-2">{children}</p>
-}
-
-/** A thin horizontal bar: rounded at the data end, square at the start. */
-function Bar({ share }: { share: number }) {
-  return (
-    <div className="mt-1.5 h-2 rounded-r-full bg-raised">
-      <div className="h-2 rounded-r-full bg-mark-soft" style={{ width: `${Math.max(share * 100, share > 0 ? 2 : 0)}%` }} />
     </div>
   )
 }

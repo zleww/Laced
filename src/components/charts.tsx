@@ -200,11 +200,22 @@ type ChartCardProps = {
   points: ChartPoint[]
   format: (value: number) => string
   valueHeading: string
+  /** First column of the table view. */
+  labelHeading?: string
   children: ReactNode
 }
 
 /** A panel holding a chart, its headline number, and a switch to the same data as a table. */
-export function ChartCard({ title, figure, caption, points, format, valueHeading, children }: ChartCardProps) {
+export function ChartCard({
+  title,
+  figure,
+  caption,
+  points,
+  format,
+  valueHeading,
+  labelHeading = 'Day',
+  children,
+}: ChartCardProps) {
   const [asTable, setAsTable] = useState(false)
   return (
     <section className="sheen min-w-0 rounded-card border border-line bg-card p-4 md:p-5">
@@ -230,7 +241,7 @@ export function ChartCard({ title, figure, caption, points, format, valueHeading
             <table className="w-full text-[13px]">
               <thead className="sticky top-0 bg-card text-left text-ink-3">
                 <tr>
-                  <th className="py-1.5 font-medium">Day</th>
+                  <th className="py-1.5 font-medium">{labelHeading}</th>
                   <th className="py-1.5 text-right font-medium">{valueHeading}</th>
                 </tr>
               </thead>

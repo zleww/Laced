@@ -22,6 +22,10 @@ function fail(error: { message: string; code?: string }): never {
   if (error.code?.startsWith('22') || error.code?.startsWith('23')) {
     throw new Error("Some details aren't valid. Check them and try again.")
   }
+  // The app asked for a database function that does not exist: a migration was not applied.
+  if (error.code === 'PGRST202') {
+    throw new Error("This part of the database isn't set up yet. The owner needs to apply the latest database update.")
+  }
   if (error.code === 'PGRST301' || /jwt/i.test(error.message)) {
     throw new Error('Your session ended. Sign in again.')
   }

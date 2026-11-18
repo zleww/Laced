@@ -1,0 +1,119 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/inter/wght.css';
+
+/*
+  Design tokens. See docs/DESIGN_SYSTEM.md section 2.
+  Colors are defined once here as CSS variables, then exposed to Tailwind
+  below, so `bg-card` or `text-ink-2` follow light and dark mode on their own.
+*/
+
+:root,
+[data-theme='light'] {
+  --bg: #f4f4f2;
+  --card: #ffffff;
+  --ink: #0e1726;
+  --ink-2: #525b6b;
+  --ink-3: #6a7282; /* captions; only on cards, never on the page background */
+  --line: #e4e5e1;
+  --bar: #0e1726;
+  --on-bar: #ffffff;
+  --accent: #d4a23a;
+  --on-accent: #0e1726;
+  --good: #1b5e3a;
+  --good-bg: #e3f0e7;
+  --warn: #8a4a12;
+  --warn-bg: #f6e9d8;
+  --bad: #8f2323;
+  --bad-bg: #f6e3e1;
+  color-scheme: light;
+}
+
+/* Dark values: used when the phone is in dark mode (unless light is forced)... */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #0b0f18;
+    --card: #131926;
+    --ink: #eceef2;
+    --ink-2: #a2aaba;
+    --ink-3: #8891a3;
+    --line: #242c3d;
+    --bar: #0b0f18;
+    --on-bar: #eceef2;
+    --accent: #d4a23a;
+    --on-accent: #0b0f18;
+    --good: #7fd4a0;
+    --good-bg: #12281d;
+    --warn: #edb67a;
+    --warn-bg: #33230f;
+    --bad: #f0a3a3;
+    --bad-bg: #351819;
+    color-scheme: dark;
+  }
+}
+
+/* ...or when dark is forced by the manual toggle. Keep both blocks identical. */
+[data-theme='dark'] {
+  --bg: #0b0f18;
+  --card: #131926;
+  --ink: #eceef2;
+  --ink-2: #a2aaba;
+  --ink-3: #8891a3;
+  --line: #242c3d;
+  --bar: #0b0f18;
+  --on-bar: #eceef2;
+  --accent: #d4a23a;
+  --on-accent: #0b0f18;
+  --good: #7fd4a0;
+  --good-bg: #12281d;
+  --warn: #edb67a;
+  --warn-bg: #33230f;
+  --bad: #f0a3a3;
+  --bad-bg: #351819;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-line: var(--line);
+  --color-bar: var(--bar);
+  --color-on-bar: var(--on-bar);
+  --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
+  --color-good: var(--good);
+  --color-good-bg: var(--good-bg);
+  --color-warn: var(--warn);
+  --color-warn-bg: var(--warn-bg);
+  --color-bad: var(--bad);
+  --color-bad-bg: var(--bad-bg);
+
+  --radius-card: 12px;
+  --radius-control: 10px;
+}
+
+@layer base {
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+    }
+  }
+}

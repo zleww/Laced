@@ -1,0 +1,27 @@
+# Dependencies and builds
+node_modules
+dist
+dist-ssr
+*.local
+
+# Environment files: real keys never go in git
+.env
+.env.*
+!.env.example
+
+# Supabase CLI local state
+supabase/.temp
+supabase/.branches
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Editor and OS files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+Thumbs.db
+*.sw?

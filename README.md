@@ -24,7 +24,7 @@ A phone-first gym management system: member records, memberships, payments, fron
 
 ## Deploy
 
-The app is a static site. On Vercel, import the repository, add `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` as environment variables, and deploy. `vercel.json` sends every path to the app and sets security headers (a Content Security Policy that only allows the app itself and Supabase, no framing, no MIME sniffing). A production build without the keys refuses to start rather than showing sample data.
+The app is a static site. On Vercel, import the repository, add `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` as environment variables (and optionally `VITE_CONTACT_EMAIL`, the address the front page's "Request a demo" button writes to), and deploy. Signed-out visitors see a public front page that explains the product; everything else needs a sign-in. `vercel.json` sends every path to the app and sets security headers (a Content Security Policy that only allows the app itself and Supabase, no framing, no MIME sniffing). A production build without the keys refuses to start rather than showing sample data.
 
 ## Run it locally
 

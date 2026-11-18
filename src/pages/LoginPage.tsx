@@ -1,6 +1,6 @@
 import type { FormEvent } from 'react'
 import { useState } from 'react'
-import { Navigate } from 'react-router'
+import { Link, Navigate } from 'react-router'
 import { Button, Field, Notice } from '../components/ui'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
@@ -35,7 +35,9 @@ export function LoginPage() {
 
   return (
     <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center px-5 py-10">
-      <p className="text-[20px] font-semibold tracking-tight">Laced</p>
+      <Link to="/" className="w-fit text-[20px] font-semibold tracking-tight">
+        Laced
+      </Link>
       <h1 className="mt-5 text-[30px] font-semibold tracking-tight">Sign in</h1>
 
       <form onSubmit={submit} className="mt-6 grid gap-4">

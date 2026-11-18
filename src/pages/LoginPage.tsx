@@ -1,6 +1,8 @@
 import type { FormEvent } from 'react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, Navigate } from 'react-router'
+import { clearFailures, minutesText, recordFailure, triesLeft, waitLeft } from '../lib/signInGuard'
+import { useLoad } from '../lib/useLoad'
 import { Button, Field, Notice } from '../components/ui'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
@@ -14,6 +16,14 @@ export function LoginPage() {
   const [busy, setBusy] = useState<'form' | Role | null>(null)
   const [error, setError] = useState<string | null>(null)
   const demo = api.mode === 'demo'
+  const limits = useLoad(() => api.signInLimits(), [])
+  // Re-check the wait every few seconds so the button comes back on its own.
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 5_000)
+    return () => window.clearInterval(timer)
+  }, [])
+  const waiting = waitLeft(now)
 
   if (session && !session.needsCode) return <Navigate to="/" replace />
   if (session?.needsCode) return <CodeStep name={session.fullName} />
@@ -31,7 +41,27 @@ export function LoginPage() {
 
   function submit(event: FormEvent) {
     event.preventDefault()
-    void run('form', () => signIn(email.trim(), password))
+    if (waitLeft() > 0) {
+      setError(`Too many wrong passwords. Try again in ${minutesText(waitLeft())}.`)
+      return
+    }
+    void run('form', async () => {
+      try {
+        await signIn(email.trim(), password)
+        clearFailures()
+      } catch (reason) {
+        if (errorMessage(reason) !== 'Wrong email or password.') throw reason
+        const { maxTries, waitMinutes } = limits.data ?? { maxTries: 5, waitMinutes: 10 }
+        if (recordFailure(maxTries, waitMinutes)) {
+          setNow(Date.now())
+          throw new Error(`Too many wrong passwords. Try again in ${waitMinutes} minutes.`)
+        }
+        const left = triesLeft(maxTries)
+        throw new Error(
+          `Wrong email or password. ${left} ${left === 1 ? 'try' : 'tries'} left before a ${waitMinutes}-minute wait.`,
+        )
+      }
+    })
   }
 
   return (
@@ -62,9 +92,13 @@ export function LoginPage() {
             onChange={(event) => setPassword(event.target.value)}
           />
         </fieldset>
-        {error && <Notice tone="bad">{error}</Notice>}
+        {waiting > 0 ? (
+          <Notice tone="bad">Too many wrong passwords. Try again in {minutesText(waiting)}.</Notice>
+        ) : (
+          error && <Notice tone="bad">{error}</Notice>
+        )}
         {!demo && (
-          <Button type="submit" busy={busy === 'form'}>
+          <Button type="submit" busy={busy === 'form'} disabled={waiting > 0}>
             Sign in
           </Button>
         )}

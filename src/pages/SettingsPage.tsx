@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Navigate } from 'react-router'
 import { CheckIcon } from '../components/icons'
 import { PageHeader, Panel } from '../components/panels'
+import { SignInLimitsPanel } from '../components/SignInLimitsPanel'
 import { StaffAccountsPanel } from '../components/StaffAccountsPanel'
 import { TwoStepPanel } from '../components/TwoStepPanel'
 import { Button, Notice } from '../components/ui'
@@ -93,7 +94,10 @@ export function SettingsPage() {
         </Panel>
       </div>
 
-      <TwoStepPanel />
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+        <TwoStepPanel />
+        <SignInLimitsPanel />
+      </div>
 
       <StaffAccountsPanel />
 

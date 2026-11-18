@@ -157,6 +157,8 @@ export function createSupabaseApi(supabase: SupabaseClient): Api {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) {
         if (/failed to fetch|network/i.test(error.message)) fail(error)
+        // Supabase's own limit on its sign-in server.
+        if (error.status === 429) throw new Error('Too many sign-in attempts. Wait a few minutes, then try again.')
         // One message for a wrong email and a wrong password, so the form never
         // reveals which accounts exist.
         throw new Error('Wrong email or password.')
@@ -167,6 +169,22 @@ export function createSupabaseApi(supabase: SupabaseClient): Api {
         throw new Error("This account doesn't have access. Ask the owner to activate it.")
       }
       return (await withCodeCheck(session))!
+    },
+
+    async signInLimits() {
+      const { data, error } = await supabase.rpc('sign_in_limits')
+      const row = (data as Row[] | null)?.[0]
+      // If the setting can't be read, the usual limits still apply.
+      if (error || !row) return { maxTries: 5, waitMinutes: 10 }
+      return { maxTries: row.max_tries, waitMinutes: row.wait_minutes }
+    },
+
+    async saveSignInLimits({ maxTries, waitMinutes }) {
+      const { error } = await supabase
+        .from('app_settings')
+        .update({ max_sign_in_tries: maxTries, sign_in_wait_minutes: waitMinutes })
+        .eq('singleton', true)
+      if (error) fail(error)
     },
 
     async verifySignInCode(code) {

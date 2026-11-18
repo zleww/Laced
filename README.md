@@ -58,6 +58,7 @@ The schema is plain SQL in `supabase/migrations/`, applied in file-name order:
 7. `payroll_activity_reports`: employees, payroll with government deductions, the activity log, and monthly reports
 8. `member_deletion`: the owner deletes a member's name and phone on request, keeping the payment records
 9. `two_step_sign_in`: once an account turns on an authenticator app, it has no powers until the code is entered
+10. `sign_in_limits`: the owner sets how many wrong passwords the sign-in screen allows before asking to wait
 
 The browser never sends a price and never writes to the money tables directly. It calls a database function with ids, and the function looks up the price and writes the payment and membership in one transaction.
 

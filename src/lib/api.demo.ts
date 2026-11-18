@@ -90,6 +90,7 @@ const staffAccounts: StaffAccount[] = Object.values(users).map((user) => ({
 const payroll: Array<PayrollEntry & { voidedAt: string | null }> = []
 const activityLog: ActivityItem[] = []
 let session: Session | null = null
+let signInLimits = { maxTries: 5, waitMinutes: 10 }
 
 const newId = () => crypto.randomUUID()
 const pause = () => new Promise((resolve) => setTimeout(resolve, 200))
@@ -240,6 +241,19 @@ export const demoApi: Api = {
   async signOut() {
     session = null
     sessionStorage.removeItem(SESSION_KEY)
+  },
+
+  async signInLimits() {
+    return { ...signInLimits }
+  },
+
+  async saveSignInLimits(limits) {
+    requireOwner()
+    await pause()
+    if (limits.maxTries < 3 || limits.maxTries > 20) throw new Error('Allow between 3 and 20 tries.')
+    if (limits.waitMinutes < 1 || limits.waitMinutes > 120) throw new Error('Set a wait between 1 and 120 minutes.')
+    signInLimits = { ...limits }
+    log('settings', `Changed sign-in limits to ${limits.maxTries} tries and ${limits.waitMinutes} minutes`)
   },
 
   async verifySignInCode() {

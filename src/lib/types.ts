@@ -10,6 +10,12 @@ export type Session = {
   needsCode?: boolean
 }
 
+/** After this many wrong passwords on a device, the sign-in screen asks the person to wait. */
+export type SignInLimits = {
+  maxTries: number
+  waitMinutes: number
+}
+
 /** A new authenticator app being set up: show the QR code, then confirm with a code. */
 export type TwoStepSetup = {
   factorId: string
@@ -277,6 +283,9 @@ export interface Api {
   signIn(email: string, password: string): Promise<Session>
   signInDemo(role: Role): Promise<Session>
   signOut(): Promise<void>
+  /** Readable before sign-in. Falls back to 5 tries and 10 minutes. */
+  signInLimits(): Promise<SignInLimits>
+  saveSignInLimits(limits: SignInLimits): Promise<void>
   /** Second step of sign-in: the 6-digit code from the authenticator app. */
   verifySignInCode(code: string): Promise<Session>
   /** Whether this account has an authenticator app turned on. */

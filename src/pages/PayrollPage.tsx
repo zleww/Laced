@@ -62,11 +62,11 @@ export function PayrollPage() {
   }
 
   const monthNav = (
-    <div className="flex items-center gap-1 print:hidden">
+    <div className="flex w-full items-center justify-between gap-1 md:w-auto print:hidden">
       <button type="button" aria-label="Previous month" className={smallButton} onClick={() => setMonth(addMonths(month, -1))}>
         <ChevronLeftIcon />
       </button>
-      <p className="min-w-36 text-center text-[14px] font-medium">{formatMonth(month)}</p>
+      <p className="min-w-36 flex-1 text-center text-[14px] font-medium md:flex-none">{formatMonth(month)}</p>
       <button
         type="button"
         aria-label="Next month"
@@ -97,14 +97,56 @@ export function PayrollPage() {
   const paidCount = entries.filter((entry) => entry.status === 'paid').length
   const payingEntry = paying ? (entryFor.get(paying.id) ?? null) : null
 
+  // Shared by the phone cards and the laptop table, so both show the same thing.
+  const statusBadge = (entry: PayrollEntry | undefined) =>
+    !entry ? (
+      <span className="text-[13px] text-ink-3">Not computed</span>
+    ) : entry.status === 'paid' ? (
+      <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-good-bg px-2 py-0.5 text-[12px] font-medium text-good">
+        <CheckIcon /> Paid
+      </span>
+    ) : (
+      <span className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-warn-bg px-2 py-0.5 text-[12px] font-medium text-warn">
+        <ClockIcon /> Draft
+      </span>
+    )
+
+  const actionsFor = (employee: Employee, entry: PayrollEntry | undefined) => (
+    <>
+      {!entry && employee.active && (
+        <button type="button" className={smallButton} onClick={() => setPaying(employee)}>
+          Compute pay
+        </button>
+      )}
+      {entry?.status === 'draft' && (
+        <>
+          <button type="button" className={smallButton} onClick={() => setPaying(employee)}>
+            Edit
+          </button>
+          <button type="button" className={smallButton} disabled={busyId === entry.id} onClick={() => markPaid(entry)}>
+            {busyId === entry.id ? 'Saving…' : 'Mark paid'}
+          </button>
+        </>
+      )}
+      {entry && (
+        <button type="button" className={smallButton} onClick={() => setVoiding(entry)}>
+          Void
+        </button>
+      )}
+    </>
+  )
+
   return (
     <div className={`grid grid-cols-1 gap-5 ${data.loading ? 'opacity-60' : ''}`}>
       <PageHeader title="Payroll" fromMore>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex w-full items-center justify-between gap-2 md:w-auto">
           {monthNav}
-          <button type="button" className={`${smallButton} print:hidden`} onClick={() => window.print()} disabled={entries.length === 0}>
-            Print register
-          </button>
+          {/* Printing is a laptop job; on a phone the button only crowds the month. */}
+          <div className="hidden flex-none md:block print:hidden">
+            <button type="button" className={smallButton} onClick={() => window.print()} disabled={entries.length === 0}>
+              Print register
+            </button>
+          </div>
         </div>
       </PageHeader>
       <p className="hidden text-[14px] print:block">Payroll register, {formatMonth(month)}</p>
@@ -123,7 +165,51 @@ export function PayrollPage() {
         {rows.length === 0 ? (
           <Empty>No employees yet. Add the people the gym pays below.</Empty>
         ) : (
-          <div className="-mx-4 overflow-x-auto px-4 md:-mx-5 md:px-5">
+          <>
+          {/* Phones, tablets, and small laptops: one card per employee, nothing scrolls sideways. */}
+          <ul className="grid gap-3 sm:grid-cols-2 xl:hidden print:hidden">
+            {rows.map((employee) => {
+              const entry = entryFor.get(employee.id)
+              const deductions = entry
+                ? entry.deductions.sssEe +
+                  entry.deductions.philhealthEe +
+                  entry.deductions.pagibigEe +
+                  entry.deductions.tax +
+                  entry.otherCentavos
+                : 0
+              return (
+                <li key={employee.id} className="rounded-control border border-line p-3.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-[15px] font-medium">{employee.fullName}</p>
+                      <p className="truncate text-[12px] text-ink-3">{employee.jobTitle}</p>
+                    </div>
+                    {statusBadge(entry)}
+                  </div>
+                  {entry && (
+                    <dl className="mt-3 grid grid-cols-3 gap-2 text-[12px] tabular-nums">
+                      <div>
+                        <dt className="text-ink-3">Gross</dt>
+                        <dd className="mt-0.5 text-[14px]">{formatPeso(entry.grossCentavos)}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-ink-3">Deductions</dt>
+                        <dd className="mt-0.5 text-[14px]">{deductions ? `-${formatPeso(deductions)}` : '₱0'}</dd>
+                      </div>
+                      <div className="text-right">
+                        <dt className="text-ink-3">Take-home</dt>
+                        <dd className="mt-0.5 text-[14px] font-semibold">{formatPeso(entry.netCentavos)}</dd>
+                      </div>
+                    </dl>
+                  )}
+                  {(entry || employee.active) && <div className="mt-3 flex flex-wrap gap-1.5">{actionsFor(employee, entry)}</div>}
+                </li>
+              )
+            })}
+          </ul>
+
+          {/* Wide screens and print: the full register. */}
+          <div className="-mx-5 hidden overflow-x-auto px-5 xl:block print:block">
             <table className="w-full min-w-[720px] text-[13px]">
               <thead className="text-left text-ink-3">
                 <tr>
@@ -160,47 +246,9 @@ export function PayrollPage() {
                       {cell(entry?.deductions.tax)}
                       {cell(entry?.otherCentavos)}
                       <td className="py-2.5 pr-3 text-right font-semibold">{entry ? formatPeso(entry.netCentavos) : '—'}</td>
-                      <td className="py-2.5 pr-3">
-                        {!entry ? (
-                          <span className="text-ink-3">Not computed</span>
-                        ) : entry.status === 'paid' ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-good-bg px-2 py-0.5 text-[12px] font-medium text-good">
-                            <CheckIcon /> Paid
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-warn-bg px-2 py-0.5 text-[12px] font-medium text-warn">
-                            <ClockIcon /> Draft
-                          </span>
-                        )}
-                      </td>
+                      <td className="py-2.5 pr-3">{statusBadge(entry)}</td>
                       <td className="py-2.5 print:hidden">
-                        <div className="flex justify-end gap-1.5">
-                          {!entry && employee.active && (
-                            <button type="button" className={smallButton} onClick={() => setPaying(employee)}>
-                              Compute pay
-                            </button>
-                          )}
-                          {entry?.status === 'draft' && (
-                            <>
-                              <button type="button" className={smallButton} onClick={() => setPaying(employee)}>
-                                Edit
-                              </button>
-                              <button
-                                type="button"
-                                className={smallButton}
-                                disabled={busyId === entry.id}
-                                onClick={() => markPaid(entry)}
-                              >
-                                {busyId === entry.id ? 'Saving…' : 'Mark paid'}
-                              </button>
-                            </>
-                          )}
-                          {entry && (
-                            <button type="button" className={smallButton} onClick={() => setVoiding(entry)}>
-                              Void
-                            </button>
-                          )}
-                        </div>
+                        <div className="flex justify-end gap-1.5">{actionsFor(employee, entry)}</div>
                       </td>
                     </tr>
                   )
@@ -219,6 +267,7 @@ export function PayrollPage() {
               )}
             </table>
           </div>
+          </>
         )}
       </Panel>
 

@@ -9,6 +9,9 @@ import { useAuth } from '../lib/auth'
 import { errorMessage } from '../lib/format'
 import type { Role } from '../lib/types'
 
+// The public marketing site, if one is set for this deploy.
+const marketingUrl = import.meta.env.VITE_MARKETING_URL?.trim() || null
+
 export function LoginPage() {
   const { session, signIn, signInDemo } = useAuth()
   const [email, setEmail] = useState('')
@@ -127,6 +130,11 @@ export function LoginPage() {
         </section>
       ) : (
         <p className="mt-6 text-[13px] text-ink-2">Accounts are created by the owner. Ask them if you need access.</p>
+      )}
+      {marketingUrl && (
+        <a href={marketingUrl} className="mt-8 w-fit text-[13px] text-ink-3 underline-offset-4 hover:text-ink hover:underline">
+          New to Laced? See what it does
+        </a>
       )}
     </main>
   )

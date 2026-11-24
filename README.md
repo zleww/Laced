@@ -2,7 +2,7 @@
 
 A phone-first gym management system for small gyms that still run on paper. The front desk checks members in, sells and renews plans, and records cash and GCash payments. The owner gets revenue reports, payroll, and a log of who did what.
 
-**Live:** [laced-rho.vercel.app](https://laced-rho.vercel.app) (the public front page; the app itself needs an account)
+**Live:** [laced-rho.vercel.app](https://laced-rho.vercel.app) (sign-in required; the product is presented on a separate marketing site)
 
 > **Status:** live prototype, built for a local gym that runs on a handwritten logbook and paper membership cards. Every flow below works against a real database and is covered by tests. A trial run alongside the paper system is next; QR and NFC member cards and owner discounts come after.
 
@@ -67,7 +67,7 @@ cp .env.example .env.local   # your Supabase URL and publishable key
 
 ## Deploy
 
-On Vercel, import the repository and add `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` (and optionally `VITE_CONTACT_EMAIL`, where the front page's "Request a demo" button writes to). `vercel.json` routes every path to the app and sets the security headers.
+On Vercel, import the repository and add `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` (and optionally `VITE_MARKETING_URL`, the public marketing site that the sign-in screen links to). `vercel.json` routes every path to the app and sets the security headers. Signed-out visitors land on the sign-in screen; the product is explained on the separate marketing site.
 
 ## Database
 

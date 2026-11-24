@@ -6,7 +6,6 @@ import { formatWeekday, manilaToday } from '../lib/dates'
 import { initials } from '../lib/format'
 import { useIdleSignOut } from '../lib/idle'
 import { useTheme } from '../lib/theme'
-import { LandingPage } from '../pages/LandingPage'
 import {
   ActivityIcon,
   ChartIcon,
@@ -56,8 +55,8 @@ export function AppLayout() {
   const { pathname } = useLocation()
 
   if (session === undefined) return <Loading />
-  // Signed out: the front page is public, every other screen goes to sign-in.
-  if (session === null) return pathname === '/' ? <LandingPage /> : <Navigate to="/login" replace />
+  // Signed out: every screen goes to sign-in. The product's public pages live on the marketing site.
+  if (session === null) return <Navigate to="/login" replace />
   // Password accepted, authenticator code still missing: finish signing in first.
   if (session.needsCode) return <Navigate to="/login" replace />
 

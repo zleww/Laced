@@ -104,6 +104,24 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+  /* Tailwind v4 leaves buttons with the arrow cursor; show a hand on anything clickable. */
+  button:not(:disabled),
+  a[href],
+  summary,
+  select,
+  [role='button'],
+  [role='tab'],
+  label:has(input[type='checkbox']),
+  label:has(input[type='radio']),
+  input[type='checkbox'],
+  input[type='radio'] {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+
   :focus-visible {
     outline: 2px solid var(--ink);
     outline-offset: 2px;

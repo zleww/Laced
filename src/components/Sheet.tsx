@@ -24,7 +24,7 @@ export function Sheet({ open, title, onClose, children }: SheetProps) {
       onClick={(event) => {
         if (event.target === ref.current) onClose()
       }}
-      className="fixed inset-x-0 top-auto bottom-0 m-0 mx-auto max-h-[92dvh] w-full max-w-xl overflow-y-auto rounded-t-[20px] border-t border-line bg-card p-0 text-ink backdrop:bg-black/50"
+      className="fixed inset-x-0 top-auto bottom-0 m-0 mx-auto max-h-[92dvh] w-full max-w-xl overflow-y-auto rounded-t-[20px] border-t border-line md:inset-y-0 md:my-auto md:h-fit md:max-h-[88dvh] md:rounded-[20px] md:border bg-card p-0 text-ink backdrop:bg-black/50"
     >
       {open && (
         <div className="px-4 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))]">

@@ -257,7 +257,7 @@ export function createSupabaseApi(supabase: SupabaseClient): Api {
     },
 
     async getMember(id): Promise<MemberDetail> {
-      const [member, memberships, visits] = await Promise.all([
+      const [member, memberships, visits, login] = await Promise.all([
         supabase.from('member_overview').select('*').eq('id', id).maybeSingle(),
         supabase
           .from('memberships')
@@ -271,10 +271,12 @@ export function createSupabaseApi(supabase: SupabaseClient): Api {
           .eq('member_id', id)
           .order('checked_in_at', { ascending: false })
           .limit(10),
+        supabase.from('members').select('auth_user_id').eq('id', id).maybeSingle(),
       ])
       if (member.error) fail(member.error)
       if (memberships.error) fail(memberships.error)
       if (visits.error) fail(visits.error)
+      if (login.error) fail(login.error)
       if (!member.data) throw new Error('Member not found.')
 
       return {
@@ -287,6 +289,7 @@ export function createSupabaseApi(supabase: SupabaseClient): Api {
           kind: row.kind,
         })),
         visits: (visits.data ?? []).map((row: Row) => ({ id: row.id, checkedInAt: row.checked_in_at })),
+        hasAppAccount: Boolean(login.data?.auth_user_id),
       }
     },
 
@@ -301,6 +304,11 @@ export function createSupabaseApi(supabase: SupabaseClient): Api {
 
     async deleteMemberData(memberId, reason) {
       await call('delete_member_data', { p_member_id: memberId, p_reason: reason })
+    },
+
+    async giveAppAccess(memberId) {
+      const result = await call('issue_member_claim_code', { p_member_id: memberId })
+      return { code: result.code, expiresAt: result.expires_at }
     },
 
     async listPlans() {

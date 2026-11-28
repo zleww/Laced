@@ -3,6 +3,7 @@
 
 create role anon nologin;
 create role authenticated nologin;
+create role service_role nologin;
 
 create schema auth;
 create table auth.users (
@@ -22,7 +23,7 @@ $$;
 
 grant usage on schema auth to anon, authenticated;
 grant execute on function auth.uid() to anon, authenticated;
-grant usage on schema public to anon, authenticated;
+grant usage on schema public to anon, authenticated, service_role;
 
 -- Supabase hands these roles full access to new objects in "public" by default.
 -- Copying that here proves the migrations really close it off again.

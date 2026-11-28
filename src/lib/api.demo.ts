@@ -155,6 +155,9 @@ function requireSession(): Session {
   return session
 }
 
+// Members who already made an app login. None to start with.
+const appAccess = new Set<string>()
+
 function findMember(id: string): DemoMember {
   const member = members.find((item) => item.id === id)
   if (!member) throw new Error('Member not found.')
@@ -300,7 +303,20 @@ export const demoApi: Api = {
       visits: checkins
         .filter((item) => item.memberId === id && (current.role === 'owner' || item.day === today))
         .map((item) => ({ id: item.id, checkedInAt: item.checkedInAt })),
+      hasAppAccount: appAccess.has(id),
     }
+  },
+
+  async giveAppAccess(memberId) {
+    requireSession()
+    await pause()
+    findMember(memberId)
+    if (appAccess.has(memberId)) throw new Error('This member already has an app account')
+    const letters = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
+    const pick = () => letters[Math.floor(Math.random() * letters.length)]
+    const code = Array.from({ length: 10 }, pick).join('')
+    const expiresAt = new Date(Date.now() + 48 * 3_600_000).toISOString()
+    return { code: `${code.slice(0, 5)}-${code.slice(5)}`, expiresAt }
   },
 
   async registerMember({ fullName, phone, consent }) {

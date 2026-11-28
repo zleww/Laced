@@ -69,6 +69,14 @@ export type MemberDetail = {
   member: Member
   memberships: MembershipRecord[]
   visits: Visit[]
+  /** True once the member has made their own app login. */
+  hasAppAccount: boolean
+}
+
+/** A one-time code the member types into the member app. Shown once. */
+export type AppAccessCode = {
+  code: string
+  expiresAt: string
 }
 
 export type TodaySummary = {
@@ -298,6 +306,8 @@ export interface Api {
   registerMember(input: RegisterMemberInput): Promise<string>
   /** Owner only: wipes the name and phone, keeps the money records. */
   deleteMemberData(memberId: string, reason: string): Promise<void>
+  /** Makes a one-time code so a member can create their app login. */
+  giveAppAccess(memberId: string): Promise<AppAccessCode>
   listPlans(): Promise<Plan[]>
   sellMembership(input: SellMembershipInput): Promise<SaleResult>
   sellDayPass(input: SellDayPassInput): Promise<SaleResult>

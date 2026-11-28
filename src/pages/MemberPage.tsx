@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
 import { ReasonSheet } from '../sheets/ReasonSheet'
+import { AppAccessPanel } from '../components/AppAccessPanel'
 import { ChevronLeftIcon } from '../components/icons'
 import { MemberActions } from '../components/MemberActions'
 import { Avatar } from '../components/MemberRow'
@@ -41,7 +42,7 @@ export function MemberPage() {
     )
   }
 
-  const { member, memberships, visits } = detail.data
+  const { member, memberships, visits, hasAppAccount } = detail.data
   const today = manilaToday()
 
   return (
@@ -104,6 +105,8 @@ export function MemberPage() {
           )}
         </Card>
       </section>
+
+      <AppAccessPanel member={member} hasAccount={hasAppAccount} />
 
       {session.role === 'owner' && (
         <section>
